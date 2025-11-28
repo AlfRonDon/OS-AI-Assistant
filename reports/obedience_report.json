@@ -1,0 +1,352 @@
+{
+  "total": 49,
+  "valid_count": 49,
+  "valid_rate": 1.0,
+  "extra_field_count": 0,
+  "avg_confidence": 0.3999999999999999,
+  "per_prompt": [
+    {
+      "prompt": "Find the latest ERROR in system logs and create a one-line bug report.",
+      "valid": true,
+      "confidence": 0.4,
+      "errors": [],
+      "extra_fields": 0
+    },
+    {
+      "prompt": "Open network settings and turn off Wi-Fi.",
+      "valid": true,
+      "confidence": 0.4,
+      "errors": [],
+      "extra_fields": 0
+    },
+    {
+      "prompt": "Mute all notifications for 1 hour.",
+      "valid": true,
+      "confidence": 0.4,
+      "errors": [],
+      "extra_fields": 0
+    },
+    {
+      "prompt": "Move file /home/alex/tmp/report.txt into /projects/alpha/docs/",
+      "valid": true,
+      "confidence": 0.4,
+      "errors": [],
+      "extra_fields": 0
+    },
+    {
+      "prompt": "Open the log viewer and highlight the last crash entry.",
+      "valid": true,
+      "confidence": 0.4,
+      "errors": [],
+      "extra_fields": 0
+    },
+    {
+      "prompt": "Copy the last error message with 10 lines of context to clipboard.",
+      "valid": true,
+      "confidence": 0.4,
+      "errors": [],
+      "extra_fields": 0
+    },
+    {
+      "prompt": "Create a note titled 'Build failure' with the latest test error included.",
+      "valid": true,
+      "confidence": 0.4,
+      "errors": [],
+      "extra_fields": 0
+    },
+    {
+      "prompt": "Search logs for 'OutOfMemory' in the last 24 hours and show occurrences.",
+      "valid": true,
+      "confidence": 0.4,
+      "errors": [],
+      "extra_fields": 0
+    },
+    {
+      "prompt": "List open windows and focus the terminal window.",
+      "valid": true,
+      "confidence": 0.4,
+      "errors": [],
+      "extra_fields": 0
+    },
+    {
+      "prompt": "Open settings and set brightness to 40%.",
+      "valid": true,
+      "confidence": 0.4,
+      "errors": [],
+      "extra_fields": 0
+    },
+    {
+      "prompt": "Download recent system metrics and create a summary note.",
+      "valid": true,
+      "confidence": 0.4,
+      "errors": [],
+      "extra_fields": 0
+    },
+    {
+      "prompt": "Open the app 'editor' and create a new file named TODO.md.",
+      "valid": true,
+      "confidence": 0.4,
+      "errors": [],
+      "extra_fields": 0
+    },
+    {
+      "prompt": "Open file /projects/alpha/config.yaml and show lines containing 'timeout'.",
+      "valid": true,
+      "confidence": 0.4,
+      "errors": [],
+      "extra_fields": 0
+    },
+    {
+      "prompt": "Run a shell command 'ls -la /var/log' and return first 20 lines output.",
+      "valid": true,
+      "confidence": 0.4,
+      "errors": [],
+      "extra_fields": 0
+    },
+    {
+      "prompt": "Archive files older than 30 days from /var/log/archive into /backups/logs.zip.",
+      "valid": true,
+      "confidence": 0.4,
+      "errors": [],
+      "extra_fields": 0
+    },
+    {
+      "prompt": "Open calendar and move meeting 'Sync' 15 minutes later.",
+      "valid": true,
+      "confidence": 0.4,
+      "errors": [],
+      "extra_fields": 0
+    },
+    {
+      "prompt": "Create a bug report draft for the latest FATAL log entry.",
+      "valid": true,
+      "confidence": 0.4,
+      "errors": [],
+      "extra_fields": 0
+    },
+    {
+      "prompt": "Search logs for 'failed to connect' and list timestamps.",
+      "valid": true,
+      "confidence": 0.4,
+      "errors": [],
+      "extra_fields": 0
+    },
+    {
+      "prompt": "Show current network status and list active network interfaces.",
+      "valid": true,
+      "confidence": 0.4,
+      "errors": [],
+      "extra_fields": 0
+    },
+    {
+      "prompt": "Turn on Do Not Disturb until 10 PM local time.",
+      "valid": true,
+      "confidence": 0.4,
+      "errors": [],
+      "extra_fields": 0
+    },
+    {
+      "prompt": "Open the system diagnostics and run memory check.",
+      "valid": true,
+      "confidence": 0.4,
+      "errors": [],
+      "extra_fields": 0
+    },
+    {
+      "prompt": "Open terminal and tail -n 200 /var/log/syslog.",
+      "valid": true,
+      "confidence": 0.4,
+      "errors": [],
+      "extra_fields": 0
+    },
+    {
+      "prompt": "Highlight the last WARNING block in the system log viewer.",
+      "valid": true,
+      "confidence": 0.4,
+      "errors": [],
+      "extra_fields": 0
+    },
+    {
+      "prompt": "Copy the last 50 lines of /var/log/syslog to clipboard.",
+      "valid": true,
+      "confidence": 0.4,
+      "errors": [],
+      "extra_fields": 0
+    },
+    {
+      "prompt": "Open file manager and move 'screenshot.png' to Desktop.",
+      "valid": true,
+      "confidence": 0.4,
+      "errors": [],
+      "extra_fields": 0
+    },
+    {
+      "prompt": "Create a note with steps to reproduce the last application crash.",
+      "valid": true,
+      "confidence": 0.4,
+      "errors": [],
+      "extra_fields": 0
+    },
+    {
+      "prompt": "Open the process monitor and kill process with PID 1234.",
+      "valid": true,
+      "confidence": 0.4,
+      "errors": [],
+      "extra_fields": 0
+    },
+    {
+      "prompt": "Fetch the last 5 entries of auth.log and create a summary.",
+      "valid": true,
+      "confidence": 0.4,
+      "errors": [],
+      "extra_fields": 0
+    },
+    {
+      "prompt": "Open the settings page for 'updates' and check for pending updates.",
+      "valid": true,
+      "confidence": 0.4,
+      "errors": [],
+      "extra_fields": 0
+    },
+    {
+      "prompt": "Open 'build' app and show the last failed build log.",
+      "valid": true,
+      "confidence": 0.4,
+      "errors": [],
+      "extra_fields": 0
+    },
+    {
+      "prompt": "Export current clipboard contents into a note titled 'clipboard dump'.",
+      "valid": true,
+      "confidence": 0.4,
+      "errors": [],
+      "extra_fields": 0
+    },
+    {
+      "prompt": "Open the log viewer and filter by level=ERROR for the last hour.",
+      "valid": true,
+      "confidence": 0.4,
+      "errors": [],
+      "extra_fields": 0
+    },
+    {
+      "prompt": "Take the last error and open an issue template with title + body prefilled.",
+      "valid": true,
+      "confidence": 0.4,
+      "errors": [],
+      "extra_fields": 0
+    },
+    {
+      "prompt": "Enable airplane mode for 5 minutes.",
+      "valid": true,
+      "confidence": 0.4,
+      "errors": [],
+      "extra_fields": 0
+    },
+    {
+      "prompt": "Open the app list and pin 'notes' to the dock.",
+      "valid": true,
+      "confidence": 0.4,
+      "errors": [],
+      "extra_fields": 0
+    },
+    {
+      "prompt": "Create a task 'Investigate crash' with due date tomorrow.",
+      "valid": true,
+      "confidence": 0.4,
+      "errors": [],
+      "extra_fields": 0
+    },
+    {
+      "prompt": "Search project files for 'TODO' and list file paths.",
+      "valid": true,
+      "confidence": 0.4,
+      "errors": [],
+      "extra_fields": 0
+    },
+    {
+      "prompt": "Open the config editor and set key 'max_retries' to 3.",
+      "valid": true,
+      "confidence": 0.4,
+      "errors": [],
+      "extra_fields": 0
+    },
+    {
+      "prompt": "Open log viewer, find the most recent segfault, copy stack trace to clipboard.",
+      "valid": true,
+      "confidence": 0.4,
+      "errors": [],
+      "extra_fields": 0
+    },
+    {
+      "prompt": "Open the system tray and disable auto-updates temporarily.",
+      "valid": true,
+      "confidence": 0.4,
+      "errors": [],
+      "extra_fields": 0
+    },
+    {
+      "prompt": "Open the browser and clear cache for the last 24 hours.",
+      "valid": true,
+      "confidence": 0.4,
+      "errors": [],
+      "extra_fields": 0
+    },
+    {
+      "prompt": "Open 'backup' app and run immediate backup to /mnt/backup.",
+      "valid": true,
+      "confidence": 0.4,
+      "errors": [],
+      "extra_fields": 0
+    },
+    {
+      "prompt": "Show me recent permission changes and who made them.",
+      "valid": true,
+      "confidence": 0.4,
+      "errors": [],
+      "extra_fields": 0
+    },
+    {
+      "prompt": "List last 20 shell command history entries.",
+      "valid": true,
+      "confidence": 0.4,
+      "errors": [],
+      "extra_fields": 0
+    },
+    {
+      "prompt": "Open the notes app and append 'diagnostics run' with timestamp.",
+      "valid": true,
+      "confidence": 0.4,
+      "errors": [],
+      "extra_fields": 0
+    },
+    {
+      "prompt": "Open the logs and save the last error block to /tmp/error_dump.txt.",
+      "valid": true,
+      "confidence": 0.4,
+      "errors": [],
+      "extra_fields": 0
+    },
+    {
+      "prompt": "Open network settings and switch to Ethernet if available.",
+      "valid": true,
+      "confidence": 0.4,
+      "errors": [],
+      "extra_fields": 0
+    },
+    {
+      "prompt": "Open app 'monitor' and highlight top CPU processes.",
+      "valid": true,
+      "confidence": 0.4,
+      "errors": [],
+      "extra_fields": 0
+    },
+    {
+      "prompt": "Create a 'short' bug summary from the last error and copy to clipboard.",
+      "valid": true,
+      "confidence": 0.4,
+      "errors": [],
+      "extra_fields": 0
+    }
+  ]
+}

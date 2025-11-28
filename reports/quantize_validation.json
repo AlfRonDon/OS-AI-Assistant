@@ -1,0 +1,14 @@
+{
+  "status": "missing_model",
+  "quantize_ran": false,
+  "bench": {
+    "runs": 1,
+    "warmups": 1,
+    "model_path": null,
+    "latencies_ms": {
+      "p50": 1.2611999991349876,
+      "p95": 1.2611999991349876
+    },
+    "peak_rss": 0
+  }
+}
