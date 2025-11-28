@@ -1,4 +1,5 @@
 import copy
+import hashlib
 import json
 import logging
 import os
@@ -8,6 +9,7 @@ from typing import Any, Dict, List
 from planner.fallback import fallback_plan
 from planner.prompt import build_prompt
 from planner.schema import Plan
+from telemetry.logger import log_event
 
 try:
     import jsonschema
@@ -67,6 +69,15 @@ def _validation_failure_response(user_query: str) -> Dict[str, Any]:
         "confidence": 0.0,
         "error": "VALIDATION_FAIL",
     }
+
+
+def _hash_plan_output(plan: Any) -> str:
+    serializable = plan.model_dump() if hasattr(plan, "model_dump") else plan
+    try:
+        payload = json.dumps(serializable, sort_keys=True, default=str)
+    except Exception:
+        payload = str(serializable)
+    return hashlib.sha256(payload.encode("utf-8")).hexdigest()
 
 
 def _load_llm():
@@ -197,7 +208,12 @@ def run_planner(retrieval_snippets: List[str], state_snapshot: Dict[str, Any], u
             _validate_with_schema(raw_plan)
         except Exception as fallback_exc:
             logger.error("fallback validation failed: %s", fallback_exc)
-            return _validation_failure_response(user_query)
+            failure = _validation_failure_response(user_query)
+            try:
+                log_event({"event": "planner_output", "planner_output_hash": _hash_plan_output(failure)})
+            except Exception:
+                pass
+            return failure
 
     if not used_fallback:
         confidence = float(raw_plan.get("confidence", 0.0) or 0.0)
@@ -208,9 +224,19 @@ def run_planner(retrieval_snippets: List[str], state_snapshot: Dict[str, Any], u
                 _validate_with_schema(raw_plan)
             except Exception as exc:
                 logger.error("fallback validation failed: %s", exc)
-                return _validation_failure_response(user_query)
+                failure = _validation_failure_response(user_query)
+                try:
+                    log_event({"event": "planner_output", "planner_output_hash": _hash_plan_output(failure)})
+                except Exception:
+                    pass
+                return failure
 
-    return Plan.model_validate(raw_plan)
+    plan_obj = Plan.model_validate(raw_plan)
+    try:
+        log_event({"event": "planner_output", "planner_output_hash": _hash_plan_output(plan_obj)})
+    except Exception:
+        pass
+    return plan_obj
 
 
 def run_planner_with_preview(

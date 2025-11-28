@@ -3,6 +3,7 @@ from typing import Dict, Any, List
 
 from planner.schema import Plan, Step
 from mock_os import state
+from telemetry.logger import log_event
 
 
 def _apply_step(target_state: Dict[str, Any], step: Step) -> None:
@@ -54,12 +55,17 @@ def dry_run(plan: Plan) -> Dict[str, Any]:
     simulated = state.snapshot()
     for step in plan.steps:
         _apply_step(simulated, step)
-    return {
+    preview = {
         "original_state": original,
         "predicted_state": simulated,
         "diff": _diff_states(original, simulated),
         "steps": [s.step_label for s in plan.steps],
     }
+    try:
+        log_event({"event": "dry_run", "dry_run_diff": preview["diff"]})
+    except Exception:
+        pass
+    return preview
 
 
 def run(plan: Plan) -> Dict[str, Any]:
@@ -69,23 +75,43 @@ def run(plan: Plan) -> Dict[str, Any]:
     applied_steps: List[str] = []
     for step in plan.steps:
         if previous_expected is not None and not state.validate(previous_expected):
-            return _state_mismatch_response(previous_expected)
+            response = _state_mismatch_response(previous_expected)
+            try:
+                log_event({"event": "run", "run_result": response})
+            except Exception:
+                pass
+            return response
         _apply_step(state.STATE, step)
         applied_steps.append(step.step_label)
         previous_expected = step.expected_state or {}
 
     if previous_expected is not None and not state.validate(previous_expected):
-        return _state_mismatch_response(previous_expected)
+        response = _state_mismatch_response(previous_expected)
+        try:
+            log_event({"event": "run", "run_result": response})
+        except Exception:
+            pass
+        return response
 
     current = state.snapshot()
-    return {
+    result = {
         "applied": True,
         "state": current,
         "applied_steps": applied_steps,
         "diff": _diff_states(before, current),
     }
+    try:
+        log_event({"event": "run", "run_result": result})
+    except Exception:
+        pass
+    return result
 
 
 def undo() -> Dict[str, Any]:
     restored = state.restore_last()
-    return {"state": restored}
+    result = {"state": restored}
+    try:
+        log_event({"event": "undo", "undo_result": result})
+    except Exception:
+        pass
+    return result
