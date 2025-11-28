@@ -2,12 +2,12 @@
   "status": "missing_model",
   "quantize_ran": false,
   "bench": {
-    "runs": 1,
-    "warmups": 1,
-    "model_path": null,
+    "runs": 5,
+    "warmups": 3,
+    "model_path": "",
     "latencies_ms": {
-      "p50": 1.2611999991349876,
-      "p95": 1.2611999991349876
+      "p50": 9.394399996381253,
+      "p95": 10.306220001075417
     },
     "peak_rss": 0
   }
