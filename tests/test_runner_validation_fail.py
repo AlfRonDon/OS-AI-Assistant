@@ -6,6 +6,11 @@ def test_runner_returns_validation_fail_and_skips_dry_run(monkeypatch):
 
     dry_run_calls = {"count": 0}
 
+    def broken_fallback(snippets, state_snapshot, user_query):
+        return {"intent": user_query}  # invalid to force validation failure after fallback
+
+    monkeypatch.setattr(runner, "fallback_plan", broken_fallback)
+
     def fake_dry_run(plan):
         dry_run_calls["count"] += 1
         return {"noop": True}

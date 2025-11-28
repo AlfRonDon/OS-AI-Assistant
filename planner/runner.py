@@ -5,6 +5,7 @@ import os
 from pathlib import Path
 from typing import Any, Dict, List
 
+from planner.fallback import fallback_plan
 from planner.prompt import build_prompt
 from planner.schema import Plan
 
@@ -177,12 +178,38 @@ def _deterministic_plan(retrieval_snippets: List[str], state_snapshot: Dict[str,
 def run_planner(retrieval_snippets: List[str], state_snapshot: Dict[str, Any], user_query: str):
     prompt = build_prompt(retrieval_snippets, state_snapshot, user_query)
     model_plan = _call_model(prompt)
-    raw_plan = model_plan or _deterministic_plan(retrieval_snippets, state_snapshot, user_query)
+    used_fallback = False
+    raw_plan: Dict[str, Any] = {}
+
+    if model_plan is None:
+        used_fallback = True
+        raw_plan = fallback_plan(retrieval_snippets, state_snapshot, user_query)
+    else:
+        raw_plan = model_plan
+
     try:
         _validate_with_schema(raw_plan)
     except Exception as exc:
         logger.error("plan validation failed: %s", exc)
-        return _validation_failure_response(user_query)
+        used_fallback = True
+        raw_plan = fallback_plan(retrieval_snippets, state_snapshot, user_query)
+        try:
+            _validate_with_schema(raw_plan)
+        except Exception as fallback_exc:
+            logger.error("fallback validation failed: %s", fallback_exc)
+            return _validation_failure_response(user_query)
+
+    if not used_fallback:
+        confidence = float(raw_plan.get("confidence", 0.0) or 0.0)
+        if confidence < 0.5:
+            logger.warning("low confidence %.3f; using fallback", confidence)
+            raw_plan = fallback_plan(retrieval_snippets, state_snapshot, user_query)
+            try:
+                _validate_with_schema(raw_plan)
+            except Exception as exc:
+                logger.error("fallback validation failed: %s", exc)
+                return _validation_failure_response(user_query)
+
     return Plan.model_validate(raw_plan)
 
 
