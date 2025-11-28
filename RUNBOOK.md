@@ -13,6 +13,11 @@
 - Enable quantization and verify with `scripts/quantize_and_validate.sh`.
 - If local hardware remains constrained, push workloads to a server fallback path.
 
+## Quantize and bench GPT_OSS model
+- Set the model path before running tools: `export GPT_OSS_MODEL_PATH=models/gpt-oss-20b.gguf` (bash) or `$env:GPT_OSS_MODEL_PATH="models/gpt-oss-20b.gguf"` (PowerShell).
+- Quantize when a tool is available: `convert-gguf --input "$env:GPT_OSS_MODEL_PATH" --output models/gpt-oss-20b-q.gguf --format q4_0` (or `python -m llama_cpp.quantize --input "$env:GPT_OSS_MODEL_PATH" --output models/gpt-oss-20b-q.gguf --format q4_0`).
+- Rerun the bench against the chosen file: `python bench/benchmark_model.py --model-path models/gpt-oss-20b-q.gguf --warmups 3 --runs 10` and confirm `bench/bench_results.json` reports nonzero `peak_rss`.
+
 ## FAISS corruption
 - Rebuild the index from `retrieval/corpus/` using the standard indexing pipeline.
 - Restore embeddings/payloads from `replays/pgvector_fallback.json` if Postgres is unavailable.

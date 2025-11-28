@@ -4,7 +4,9 @@
   "reports": {
     "obedience": "reports/obedience_report.json",
     "bench": "bench/bench_results.json",
-    "quantize_validation": "reports/quantize_validation.json"
+    "quantize_validation": "reports/quantize_validation.json",
+    "diagnostic_summary": "reports/diagnostic_summary.json",
+    "suggested_fixes_patch": "patches/suggested_fixes.patch"
   },
-  "git_range": "0799a6ed6359489cdd55fdad2875c56d6249447f..HEAD"
+  "git_range": "03855730463cdc082dd5101bbd0e8bcaaae58cf8..HEAD"
 }

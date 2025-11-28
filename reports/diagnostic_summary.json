@@ -1,0 +1,39 @@
+{
+  "timestamp": "2025-11-29T01:55:05.748498",
+  "obedience": {
+    "valid_rate": 1.0,
+    "total": 49,
+    "failing_prompts": []
+  },
+  "bench": {
+    "p50_ms": 2.9659499996341765,
+    "p95_ms": 3.975035000621574,
+    "peak_rss_mb": 44.0078125,
+    "bench_peak_missing": false
+  },
+  "quantize": {
+    "pass": false,
+    "notes": "Model path models/gpt-oss-20b.gguf found. No quantizer (quantize/convert-gguf/python -m llama.cpp.quantize) found; skipped quantization. Benchmark ran (warmups=3, runs=10); p95=3.9750 ms, peak_rss_mb=44.01 (target 16000.0).",
+    "checked_path": "models/gpt-oss-20b.gguf",
+    "quantized_path": null,
+    "quantize_ran": false,
+    "bench": {
+      "runs": 10,
+      "warmups": 3,
+      "model_path": "models/gpt-oss-20b.gguf",
+      "latencies_ms": {
+        "p50": 2.9659499996341765,
+        "p95": 3.975035000621574
+      },
+      "peak_rss": 46145536
+    },
+    "peak_rss_mb": 44.0078125,
+    "target_rss_mb": 16000.0
+  },
+  "runner_failures_count": 0,
+  "suggested_next_actions": [
+    "Install a quantizer (convert-gguf or python -m llama_cpp.quantize) and generate models/gpt-oss-20b-q.gguf with GPT_OSS_MODEL_PATH set.",
+    "Rerun bench via python bench/benchmark_model.py --model-path models/gpt-oss-20b-q.gguf --warmups 3 --runs 10 to refresh metrics after quantization.",
+    "Enable planner/runner.log capture during pack runs to collect any VALIDATION_FAIL samples (none recorded yet)."
+  ]
+}
