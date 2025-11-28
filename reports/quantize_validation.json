@@ -1,14 +1,19 @@
 {
-  "status": "missing_model",
+  "pass": false,
+  "notes": "Model path models/gpt-oss-20b.gguf found. No quantizer (quantize/convert-gguf/python -m llama.cpp.quantize) found; skipped quantization. Benchmark ran (warmups=3, runs=10); p95=3.9750 ms, peak_rss_mb=44.01 (target 16000.0).",
+  "checked_path": "models/gpt-oss-20b.gguf",
+  "quantized_path": null,
   "quantize_ran": false,
   "bench": {
-    "runs": 5,
+    "runs": 10,
     "warmups": 3,
-    "model_path": "",
+    "model_path": "models/gpt-oss-20b.gguf",
     "latencies_ms": {
-      "p50": 9.394399996381253,
-      "p95": 10.306220001075417
+      "p50": 2.9659499996341765,
+      "p95": 3.975035000621574
     },
-    "peak_rss": 0
-  }
+    "peak_rss": 46145536
+  },
+  "peak_rss_mb": 44.0078125,
+  "target_rss_mb": 16000.0
 }
