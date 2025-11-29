@@ -21,5 +21,7 @@ echo "llama.cpp built. To quantize a model under /mnt/c/... into q4_0 GGUF (run 
 echo "  SRC_MODEL=\"/mnt/c/Users/alfre/OS AI Agent/models/your-model-f16.gguf\""
 echo "  OUT_MODEL=\"\${SRC_MODEL%.gguf}-q4_0.gguf\""
 echo "  ./quantize \"\$SRC_MODEL\" \"\$OUT_MODEL\" q4_0"
+echo "Or run directly without variables:"
+echo "  ./quantize \"/mnt/c/Users/alfre/OS AI Agent/models/your-model-f16.gguf\" \"/mnt/c/Users/alfre/OS AI Agent/models/your-model-f16-q4_0.gguf\" q4_0"
 echo
 echo "Tip: keep input/output on /mnt/c so Windows can access the result."
