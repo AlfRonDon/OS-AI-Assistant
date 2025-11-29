@@ -1,1 +1,1 @@
-﻿Created/updated C:\Users\alfre\OS AI Agent\scripts\wsl_model_setup.sh
+﻿WSL quantize helper created at scripts/wsl_model_setup.sh

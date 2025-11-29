@@ -1,1 +1,1 @@
-﻿Post-check skipped (model missing or below 300MB).
+﻿Post-check not run because path D (WSL helper) selected.

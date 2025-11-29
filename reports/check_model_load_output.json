@@ -1,5 +1,6 @@
 {
   "model_path": "models/gpt-oss-20b.gguf",
   "import_ok": true,
+  "import_error": null,
   "run_error": "Failed to load model from file: models/gpt-oss-20b.gguf"
 }

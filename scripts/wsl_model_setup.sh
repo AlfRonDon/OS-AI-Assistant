@@ -1,26 +1,21 @@
 #!/usr/bin/env bash
-# WSL helper to build llama.cpp and quantize a GPT-OSS model.
-# Run inside WSL (Ubuntu/Debian). Does not download the model.
-
+# WSL helper to build llama.cpp and prepare quantization tools (no auto quantize).
 set -euo pipefail
 
-sudo apt-get update
-sudo apt-get install -y build-essential cmake git python3 python3-venv
+sudo apt update
+sudo apt install -y build-essential git cmake libssl-dev
 
-LLAMA_DIR="${LLAMA_DIR:-$HOME/llama.cpp}"
+LLAMA_DIR=/tmp/llama.cpp
 if [ ! -d "$LLAMA_DIR" ]; then
-  git clone https://github.com/ggerganov/llama.cpp.git "$LLAMA_DIR"
+  git clone https://github.com/ggerganov/llama.cpp "$LLAMA_DIR"
 else
   git -C "$LLAMA_DIR" pull --ff-only
 fi
 
 cd "$LLAMA_DIR"
-mkdir -p build
-cd build
-cmake .. -DCMAKE_BUILD_TYPE=Release
-cmake --build . --parallel
+make
 
-echo "llama.cpp built. To quantize GPT-OSS:"
+echo "llama.cpp built. To quantize GPT-OSS manually (run inside WSL):"
 echo "  WIN_MODEL=\"/mnt/c/Users/alfre/OS AI Agent/models/gpt-oss-20b.gguf\""
 echo "  ./quantize \"$WIN_MODEL\" \"${WIN_MODEL%.gguf}-q.gguf\" q4_0"
-echo "Copy the *_q.gguf back to the Windows models directory if needed."
+echo "The output will live beside the input path so Windows can access it."

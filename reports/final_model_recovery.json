@@ -1,38 +1,33 @@
 ﻿{
-    "found_local_candidates":  [
+    "path_taken":  "D",
+    "wsl_script":  "scripts/wsl_model_setup.sh",
+    "scan_candidates":  [
 
-                               ],
-    "moved_local":  false,
+                        ],
     "download_attempted":  false,
-    "quantize_attempted":  true,
     "remote_adapter_created":  false,
     "model_file_info":  {
-                            "found":  true,
-                            "full_name":  "C:\\Users\\alfre\\OS AI Agent\\models\\gpt-oss-20b.gguf",
-                            "length":  66,
+                            "length_bytes":  66,
                             "last_write_time":  "\/Date(1764350135506)\/",
-                            "is_stub":  true
+                            "exists":  true
                         },
-    "check_model_load_pre":  {
-                                 "model_path":  "models/gpt-oss-20b.gguf",
-                                 "import_ok":  true,
-                                 "run_error":  "Failed to load model from file: models/gpt-oss-20b.gguf"
-                             },
-    "check_model_load_post":  {
-                                  "message":  "Model not available or below threshold.",
-                                  "status":  "skipped"
-                              },
-    "rebuild_test_summary":  {
-                                 "status":  "skipped",
-                                 "reason":  "Model load not sufficient for rebuild/tests.",
-                                 "obedience_valid_rate":  null,
-                                 "bench_p50":  null,
-                                 "bench_p95":  null,
-                                 "peak_rss_mb":  null
-                             },
+    "pre_check":  {
+                      "model_path":  "models/gpt-oss-20b.gguf",
+                      "import_ok":  true,
+                      "import_error":  null,
+                      "run_error":  "Failed to load model from file: models/gpt-oss-20b.gguf"
+                  },
+    "post_check":  {
+                       "status":  "skipped",
+                       "timestamp":  "2025-11-29T20:38:07.4120788+05:30",
+                       "reason":  "path D selected (WSL helper); no post-check run"
+                   },
+    "rebuild_test_summary":  null,
     "recommendations":  [
-                            "Place a real GPT-OSS GGUF (\u003e300MB) at models/gpt-oss-20b.gguf or point GPT_OSS_MODEL_PATH to it.",
-                            "Set a valid https DOWNLOAD_URL in .env to allow automated download when local files are missing.",
-                            "If remote inference is preferred, set USE_REMOTE_MODEL=1 and add planner/remote_adapter.py + API keys."
+                            "No GGUF candidates \u003e300MB found; locate a real GPT-OSS model and place it at models/gpt-oss-20b.gguf.",
+                            "If you have a URL, set DOWNLOAD_URL=https://... in .env to allow automated download.",
+                            "Run scripts/wsl_model_setup.sh inside WSL to build llama.cpp tools and quantize a local model (see script instructions).",
+                            "Optionally set USE_REMOTE_MODEL=1 with REMOTE_PROVIDER to use a remote planner until a local model is available.",
+                            "Install python deps (psutil, llama-cpp-python) so check_model_load.py can validate models."
                         ]
 }
