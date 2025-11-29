@@ -1,5 +1,6 @@
 import json
 import sys
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Tuple
 
@@ -20,6 +21,7 @@ except ImportError:  # pragma: no cover
 PROMPTS_PATH = ROOT / "tests" / "obedience_prompts.json"
 REPORT_PATH = ROOT / "reports" / "obedience_report.json"
 SCHEMA_PATH = ROOT / "contracts" / "planner_output.schema.json"
+TEMPERATURE = 0.0
 
 
 def _load_prompts(path: Path) -> List[str]:
@@ -33,6 +35,21 @@ def _load_prompts(path: Path) -> List[str]:
 def _load_schema() -> Dict[str, Any]:
     with open(SCHEMA_PATH, "r", encoding="utf-8") as f:
         return json.load(f)
+
+
+def _plan_to_dict(plan_obj: Any) -> Dict[str, Any]:
+    if hasattr(plan_obj, "model_dump"):
+        return plan_obj.model_dump()
+    if isinstance(plan_obj, dict):
+        return dict(plan_obj)
+    return {
+        "intent": getattr(plan_obj, "intent", ""),
+        "slots": {},
+        "steps": [],
+        "sources": [],
+        "confidence": 0.0,
+        "error": "UNSERIALIZABLE",
+    }
 
 
 def _validate_plan(plan: Dict[str, Any], schema: Dict[str, Any]) -> Tuple[bool, List[str], int]:
@@ -69,12 +86,17 @@ def main() -> int:
     valid_count = 0
     extra_field_count = 0
     confidence_total = 0.0
+    metadata = {
+        "temperature": TEMPERATURE,
+        "schema_path": str(SCHEMA_PATH),
+        "prompts_path": str(PROMPTS_PATH),
+        "generated_at": datetime.now(timezone.utc).isoformat(),
+    }
 
     for prompt in prompts:
         snippets = [s for _, s in query_index(index, docs, prompt, top_k=1)]
         try:
-            plan_obj = run_planner(snippets, state.snapshot(), prompt)
-            plan: Dict[str, Any] = plan_obj.model_dump() if hasattr(plan_obj, "model_dump") else dict(plan_obj)
+            plan = _plan_to_dict(run_planner(snippets, state.snapshot(), prompt))
         except Exception as exc:  # pragma: no cover - catastrophic path
             plan = {"intent": prompt, "steps": [], "sources": snippets, "confidence": 0.0, "error": str(exc)}
         valid, errors, extras = _validate_plan(plan, schema)
@@ -83,6 +105,7 @@ def main() -> int:
         confidence_total += float(plan.get("confidence", 0.0) or 0.0)
         results.append(
             {
+                "prompt_index": len(results),
                 "prompt": prompt,
                 "valid": valid,
                 "confidence": float(plan.get("confidence", 0.0) or 0.0),
@@ -101,6 +124,7 @@ def main() -> int:
         "valid_rate": valid_rate,
         "extra_field_count": extra_field_count,
         "avg_confidence": avg_confidence,
+        "metadata": metadata,
         "per_prompt": results,
     }
 

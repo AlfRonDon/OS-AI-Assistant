@@ -24,9 +24,17 @@ def test_obedience_pack_runs():
     total = data.get("total")
     valid_rate = data.get("valid_rate", 0.0)
     per_prompt = data.get("per_prompt", [])
+    metadata = data.get("metadata", {})
 
     assert total == len(expected_prompts), "report total does not match prompts count"
     assert len(per_prompt) == len(expected_prompts), "per_prompt length mismatch"
+    assert metadata.get("prompts_path"), "metadata missing prompts_path"
+    assert metadata.get("schema_path"), "metadata missing schema_path"
+    for idx, entry in enumerate(per_prompt):
+        assert entry.get("prompt_index") == idx
+        assert entry.get("prompt") == expected_prompts[idx]
+        assert "valid" in entry
+
     if valid_rate < 0.85:
         assert result.returncode == 2, "runner should exit 2 when valid_rate is low"
     else:
