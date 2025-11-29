@@ -44,6 +44,7 @@ from datetime import datetime
 from pathlib import Path
 
 use_wrapper = os.getenv("USE_PY_WRAPPER", "0") == "1"
+MODEL_ENV_VAR = "GPT_OSS_MODEL_PATH"
 index_path = Path(sys.argv[1]).resolve()
 obedience_path = Path(sys.argv[2]).resolve()
 bench_path = Path(sys.argv[3]).resolve()
@@ -88,10 +89,13 @@ run_build_index()
 obedience_status = run_command([sys.executable, str(obedience_path)], "obedience pack")
 
 bench_cmd = [sys.executable, str(bench_path), "--warmups", "3", "--runs", "5"]
-model_path = os.environ.get("GPT_OSS_MODEL_PATH")
+model_path = os.environ.get(MODEL_ENV_VAR)
 if model_path:
   bench_cmd.extend(["--model-path", model_path])
-bench_status = run_command(bench_cmd, "bench")
+  bench_status = run_command(bench_cmd, "bench")
+else:
+  print(f"{MODEL_ENV_VAR} is not set; skipping bench run", file=sys.stderr)
+  bench_status = 1
 
 obedience_valid_rate = read_metric(
   root / "reports" / "obedience_report.json", lambda data: float(data.get("valid_rate")) if data.get("valid_rate") is not None else None
@@ -115,6 +119,7 @@ summary = {
   "bench_p50_ms": bench_p50_ms,
   "bench_p95_ms": bench_p95_ms,
   "bench_peak_rss": bench_peak_rss,
+  "bench_model_path": model_path,
   "obedience_status": obedience_status,
   "bench_status": bench_status,
 }
