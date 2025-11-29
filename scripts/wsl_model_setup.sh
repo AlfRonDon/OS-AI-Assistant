@@ -1,21 +1,25 @@
 #!/usr/bin/env bash
-# WSL helper to build llama.cpp and prepare quantization tools (no auto quantize).
+# WSL helper to build llama.cpp and show quantization examples (no auto quantize).
 set -euo pipefail
 
-sudo apt update
-sudo apt install -y build-essential git cmake libssl-dev
-
 LLAMA_DIR=/tmp/llama.cpp
+
+sudo apt-get update
+sudo apt-get install -y build-essential git cmake libssl-dev
+
 if [ ! -d "$LLAMA_DIR" ]; then
   git clone https://github.com/ggerganov/llama.cpp "$LLAMA_DIR"
 else
-  git -C "$LLAMA_DIR" pull --ff-only
+  echo "llama.cpp already present at $LLAMA_DIR"
 fi
 
 cd "$LLAMA_DIR"
 make
 
-echo "llama.cpp built. To quantize GPT-OSS manually (run inside WSL):"
-echo "  WIN_MODEL=\"/mnt/c/Users/alfre/OS AI Agent/models/gpt-oss-20b.gguf\""
-echo "  ./quantize \"$WIN_MODEL\" \"${WIN_MODEL%.gguf}-q.gguf\" q4_0"
-echo "The output will live beside the input path so Windows can access it."
+echo
+echo "llama.cpp built. To quantize a model under /mnt/c/... into q4_0 GGUF (run inside WSL):"
+echo "  SRC_MODEL=\"/mnt/c/Users/alfre/OS AI Agent/models/your-model-f16.gguf\""
+echo "  OUT_MODEL=\"\${SRC_MODEL%.gguf}-q4_0.gguf\""
+echo "  ./quantize \"\$SRC_MODEL\" \"\$OUT_MODEL\" q4_0"
+echo
+echo "Tip: keep input/output on /mnt/c so Windows can access the result."
