@@ -1,5 +1,18 @@
-﻿{
-    "status":  "skipped",
-    "timestamp":  "2025-11-29T20:38:07.4120788+05:30",
-    "reason":  "path D selected (WSL helper); no post-check run"
+{
+  "model_path": "models\\gpt-oss-20b.gguf",
+  "import_ok": true,
+  "import_error": null,
+  "model_exists": true,
+  "model_size_bytes": 13797047968,
+  "loader_opts": {
+    "n_ctx": 512,
+    "n_threads": 12,
+    "n_gpu_layers": 0,
+    "embedding": false,
+    "logits_all": false,
+    "use_mmap": true,
+    "use_mlock": false,
+    "verbose": false
+  },
+  "run_error": "Failed to load model: Failed to load model from file: models\\gpt-oss-20b.gguf"
 }

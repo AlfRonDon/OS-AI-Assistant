@@ -1,1 +1,7 @@
-﻿models/gpt-oss-20b.gguf is missing
+
+
+FullName : C:\Users\alfre\OS AI Agent\models\gpt-oss-20b.gguf
+Length   : 13797047968
+
+
+

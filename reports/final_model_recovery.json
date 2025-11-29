@@ -1,15 +1,22 @@
-﻿{
-    "fetch":  true,
-    "files_fetched":  [
-                          "config.json",
-                          "tokenizer.json",
-                          "tokenizer_config.json"
-                      ],
-    "conversion_success":  false,
-    "convert_log":  "reports/convert_conversion_retry.log",
-    "check_output_path":  "reports/check_model_load_output.json",
-    "recommendations":  [
-                            "Install or expose llama_cpp.convert_hf_to_gguf or use scripts/convert_hf_to_gguf.py with full dependencies (torch, gguf extras) to produce gguf.",
-                            "Once a gguf is produced, rerun python scripts/check_model_load.py to validate load and proceed with bench/obedience tests if RSS allows."
-                        ]
+{
+    "load_success":  false,
+    "outputs":  {
+                    "model_file_info_post":  "reports/model_file_info_post.txt",
+                    "backup":  "models/backups/gpt-oss-20b_model_20251130_032756_link.safetensors",
+                    "check_model_load_post":  "reports/check_model_load_post.txt",
+                    "gguf":  "models/gpt-oss-20b.gguf",
+                    "check_model_load_output_post":  "reports/check_model_load_output_post.json"
+                },
+    "mapping_patch":  true,
+    "logs":  {
+                 "convert_conversion_retry":  "reports/convert_conversion_retry_mapping.log"
+             },
+    "timestamp":  "2025-11-30T03:34:36.1195515+05:30",
+    "reason":  "llama_cpp failed to load gguf (see check_model_load_output_post.json)",
+    "recommended_next_steps":  [
+                                   "Investigate llama_cpp load failure against models/gpt-oss-20b.gguf (check_model_load_output_post.json)",
+                                   "Consider reducing quantization or verifying MXFP4 handling in converter if load keeps failing"
+                               ],
+    "status":  "converted_but_load_failed",
+    "conversion_success":  true
 }

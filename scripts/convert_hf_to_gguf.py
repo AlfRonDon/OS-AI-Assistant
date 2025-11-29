@@ -9408,6 +9408,25 @@ class SmolLM3Model(LlamaModel):
 class GptOssModel(TextModel):
     model_arch = gguf.MODEL_ARCH.GPT_OSS
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # track MXFP4 block/scales until both halves are seen
+        self._pending_blocks: dict[tuple[int, str], torch.Tensor] = {}
+        self._pending_scales: dict[tuple[int, str], torch.Tensor] = {}
+
+    def _repack_pending(self, bid: int, which: str):
+        key = (bid, which)
+        blocks = self._pending_blocks.get(key)
+        scales = self._pending_scales.get(key)
+        if blocks is None or scales is None:
+            return
+        target_tensor = gguf.MODEL_TENSOR.FFN_DOWN_EXP if which == "mlp1" else gguf.MODEL_TENSOR.FFN_UP_EXP
+        new_name = self.format_tensor_name(target_tensor, bid, suffix=".weight")
+        self.repack_mxfp4(new_name, blocks, scales)
+        # clear so we do not reuse
+        self._pending_blocks.pop(key, None)
+        self._pending_scales.pop(key, None)
+
     # TODO: remove once MXFP4 is supported more generally
     def dequant_model(self):
         quant_config = self.hparams.get("quantization_config")
@@ -9441,8 +9460,12 @@ class GptOssModel(TextModel):
         return out
 
     def repack_mxfp4(self, new_name: str, blocks: Tensor, scales: Tensor):
-        assert blocks.dtype == torch.uint8
-        assert scales.dtype == torch.uint8
+        if blocks.dtype != torch.uint8:
+            logger.warning(f"{new_name}: expected uint8 blocks, casting from {blocks.dtype}")
+            blocks = blocks.to(torch.uint8)
+        if scales.dtype != torch.uint8:
+            logger.warning(f"{new_name}: expected uint8 scales, casting from {scales.dtype}")
+            scales = scales.to(torch.uint8)
         scales = scales.unsqueeze(-1)
         assert len(blocks.shape) == 4
         assert len(scales.shape) == 4
@@ -9478,44 +9501,87 @@ class GptOssModel(TextModel):
     def modify_tensors(self, data_torch: Tensor, name: str, bid: int | None) -> Iterable[tuple[str, Tensor]]:
         del bid  # unused
 
-        if "sinks" in name:
-            name += ".weight"
+        # top-level weights
+        if name == "embedding.weight":
+            return [(self.format_tensor_name(gguf.MODEL_TENSOR.TOKEN_EMBD, None, ".weight"), data_torch)]
+        if name == "unembedding.weight":
+            return [(self.format_tensor_name(gguf.MODEL_TENSOR.OUTPUT, None, ".weight"), data_torch)]
+        if name == "norm.scale":
+            return [(self.format_tensor_name(gguf.MODEL_TENSOR.OUTPUT_NORM, None, ".weight"), data_torch)]
 
-        # correct naming for down_proj
-        if "down_proj" in name:
-            if name.endswith("_bias"):
-                name = name.replace("down_proj_bias", "down_proj.bias")
-            elif "_blocks" not in name and "_scales" not in name:
-                logger.warning(f"{name} is not in MXFP4, performance may be degraded")
-                name = name.replace("down_proj", "down_proj.weight")
-                data_torch = data_torch.transpose(-1, -2)
-            else:
-                # otherwise, it should already be repacked to ggml MXFP4 format
+        # block-local weights
+        m = re.match(r"block\.(\d+)\.(.*)", name)
+        if m:
+            bid = int(m.group(1))
+            tail = m.group(2)
+
+            if tail == "attn.norm.scale":
+                return [(self.format_tensor_name(gguf.MODEL_TENSOR.ATTN_NORM, bid, ".weight"), data_torch)]
+
+            if tail.startswith("attn.qkv."):
+                c3 = data_torch.shape[0]
+                n_head = self.hparams.get("num_attention_heads", 0)
+                n_kv = self.hparams.get("num_key_value_heads", n_head)
+                if c3 % 3 == 0:
+                    c = c3 // 3
+                    q, k, v = data_torch.split(c, dim=0)
+                else:
+                    total = n_head + 2 * n_kv
+                    assert total > 0 and c3 % total == 0, f"unexpected qkv first dim {c3}"
+                    head_dim = c3 // total
+                    if data_torch.ndim == 2:
+                        qkv = data_torch.view(total, head_dim, data_torch.shape[1])
+                        q = qkv[:n_head].reshape(n_head * head_dim, data_torch.shape[1])
+                        k = qkv[n_head:n_head + n_kv].reshape(n_kv * head_dim, data_torch.shape[1])
+                        v = qkv[n_head + n_kv:].reshape(n_kv * head_dim, data_torch.shape[1])
+                    else:
+                        qkv = data_torch.view(total, head_dim)
+                        q = qkv[:n_head].reshape(n_head * head_dim)
+                        k = qkv[n_head:n_head + n_kv].reshape(n_kv * head_dim)
+                        v = qkv[n_head + n_kv:].reshape(n_kv * head_dim)
+                suffix = ".weight" if data_torch.ndim == 2 else ".bias"
+                return [
+                    (self.format_tensor_name(gguf.MODEL_TENSOR.ATTN_Q, bid, suffix), q),
+                    (self.format_tensor_name(gguf.MODEL_TENSOR.ATTN_K, bid, suffix), k),
+                    (self.format_tensor_name(gguf.MODEL_TENSOR.ATTN_V, bid, suffix), v),
+                ]
+
+            if tail == "attn.sinks":
+                return [(self.format_tensor_name(gguf.MODEL_TENSOR.ATTN_SINKS, bid, ".weight"), data_torch)]
+
+            if tail.startswith("attn.out."):
+                suffix = ".weight" if tail.endswith("weight") else ".bias"
+                return [(self.format_tensor_name(gguf.MODEL_TENSOR.ATTN_OUT, bid, suffix), data_torch)]
+
+            if tail == "mlp.norm.scale":
+                return [(self.format_tensor_name(gguf.MODEL_TENSOR.ATTN_POST_NORM, bid, ".weight"), data_torch)]
+
+            if tail.startswith("mlp.gate."):
+                suffix = ".weight" if tail.endswith("weight") else ".bias"
+                gate_inp = self.format_tensor_name(gguf.MODEL_TENSOR.FFN_GATE_INP, bid, suffix)
+                gate_exp = self.format_tensor_name(gguf.MODEL_TENSOR.FFN_GATE_EXP, bid, suffix)
+                return [(gate_inp, data_torch), (gate_exp, data_torch)]
+
+            if tail.startswith("mlp.mlp1_weight."):
+                if tail.endswith(".blocks"):
+                    self._pending_blocks[(bid, "mlp1")] = data_torch
+                elif tail.endswith(".scales"):
+                    self._pending_scales[(bid, "mlp1")] = data_torch
+                self._repack_pending(bid, "mlp1")
                 return []
 
-        # split the gate_up into gate and up
-        if "gate_up_proj" in name:
-            if name.endswith("_bias"):
-                name_up = name.replace("gate_up_proj_bias", "up_proj.bias")
-                name_gate = name.replace("gate_up_proj_bias", "gate_proj.bias")
-                gate_proj_bias, up_proj_bias = data_torch[..., ::2], data_torch[..., 1::2]
-                return [
-                    (self.map_tensor_name(name_gate), gate_proj_bias),
-                    (self.map_tensor_name(name_up), up_proj_bias)
-                ]
-            elif "_blocks" not in name and "_scales" not in name:
-                logger.warning(f"{name} is not in MXFP4, performance may be degraded")
-                name_up = name.replace("gate_up_proj", "up_proj.weight")
-                name_gate = name.replace("gate_up_proj", "gate_proj.weight")
-                data_torch = data_torch.transpose(-1, -2)
-                gate_proj_weight, up_proj_weight = data_torch[:, ::2, :], data_torch[:, 1::2, :]
-                return [
-                    (self.map_tensor_name(name_gate), gate_proj_weight),
-                    (self.map_tensor_name(name_up), up_proj_weight)
-                ]
-            else:
-                # otherwise, it should already be repacked to ggml MXFP4 format
+            if tail.startswith("mlp.mlp2_weight."):
+                if tail.endswith(".blocks"):
+                    self._pending_blocks[(bid, "mlp2")] = data_torch
+                elif tail.endswith(".scales"):
+                    self._pending_scales[(bid, "mlp2")] = data_torch
+                self._repack_pending(bid, "mlp2")
                 return []
+
+            if tail == "mlp.mlp1_bias":
+                return [(self.format_tensor_name(gguf.MODEL_TENSOR.FFN_DOWN_EXP, bid, ".bias"), data_torch)]
+            if tail == "mlp.mlp2_bias":
+                return [(self.format_tensor_name(gguf.MODEL_TENSOR.FFN_UP_EXP, bid, ".bias"), data_torch)]
 
         return [(self.map_tensor_name(name), data_torch)]
 
