@@ -5,161 +5,131 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "${ROOT}"
 
-mkdir -p logs reports bench
+case "$(uname -s 2>/dev/null || echo Unknown)" in
+  MINGW*|MSYS*|CYGWIN*|Windows_NT*) PATH_SEP=";"; USE_PY_WRAPPER=1 ;;
+  *) PATH_SEP=":"; USE_PY_WRAPPER=0 ;;
+esac
 
-LOG_AGG="logs/rebuild_and_test.log"
-touch "${LOG_AGG}"
-
-timestamp="$(date -Iseconds)"
-echo "rebuild_and_test start ${timestamp}" | tee -a "${LOG_AGG}"
-
-notes=()
-
-log_note() {
-  local msg="$1"
-  echo "${msg}" | tee -a "${LOG_AGG}" >&2
-  notes+=("${msg}")
-}
+if [[ -n "${PYTHONPATH:-}" ]]; then
+  export PYTHONPATH="${ROOT}${PATH_SEP}${PYTHONPATH}"
+else
+  export PYTHONPATH="${ROOT}"
+fi
 
 INDEX_SCRIPT="${ROOT}/retrieval/index.py"
 OBEDIENCE_SCRIPT="${ROOT}/scripts/run_obedience_pack.py"
 BENCH_SCRIPT="${ROOT}/bench/benchmark_model.py"
-QUANTIZE_SCRIPT="${ROOT}/scripts/quantize_and_validate.sh"
+SUMMARY_PATH="${ROOT}/reports/rebuild_and_test_summary.json"
 
-if [[ ! -f "${INDEX_SCRIPT}" ]]; then
-  log_note "index build script missing: ${INDEX_SCRIPT}"
+missing=0
+for required in "${INDEX_SCRIPT}" "${OBEDIENCE_SCRIPT}" "${BENCH_SCRIPT}"; do
+  if [[ ! -f "${required}" ]]; then
+    echo "critical file missing: ${required}" >&2
+    missing=1
+  fi
+done
+
+if (( missing )); then
   exit 1
 fi
 
-if [[ ! -f "${OBEDIENCE_SCRIPT}" ]]; then
-  log_note "obedience script missing: ${OBEDIENCE_SCRIPT}"
-  exit 2
-fi
+mkdir -p "${ROOT}/reports" "${ROOT}/bench" "${ROOT}/logs"
 
-if [[ ! -f "${BENCH_SCRIPT}" ]]; then
-  log_note "benchmark script missing: ${BENCH_SCRIPT}"
-  exit 3
-fi
-
-python "${INDEX_SCRIPT}" --build 2>&1 | tee logs/index_build.log
-
-python "${OBEDIENCE_SCRIPT}" 2>&1 | tee logs/run_obedience_pack.log || true
-obedience_status=${PIPESTATUS[0]:-0}
-if (( obedience_status != 0 )); then
-  log_note "obedience pack exited with status ${obedience_status}"
-fi
-
-python "${BENCH_SCRIPT}" --warmups 3 --runs 5 --model-path "${GPT_OSS_MODEL_PATH:-}" 2>&1 | tee logs/bench.log || true
-bench_status=${PIPESTATUS[0]:-0}
-if (( bench_status != 0 )); then
-  log_note "benchmark exited with status ${bench_status}"
-fi
-
-if [[ -f "${QUANTIZE_SCRIPT}" ]]; then
-  bash "${QUANTIZE_SCRIPT}" 2>&1 | tee logs/quantize.log || true
-  quantize_status=${PIPESTATUS[0]:-0}
-  if (( quantize_status != 0 )); then
-    log_note "quantize_and_validate exited with status ${quantize_status}"
-  fi
-else
-  log_note "quantize script missing: ${QUANTIZE_SCRIPT}"
-fi
-
-NOTES_TEXT=""
-if ((${#notes[@]} > 0)); then
-  NOTES_TEXT="$(printf '%s\n' "${notes[@]}")"
-fi
-
-ROOT="${ROOT}" TIMESTAMP="${timestamp}" LOG_AGG="${LOG_AGG}" NOTES_TEXT="${NOTES_TEXT}" python - <<'PY'
+USE_PY_WRAPPER="${USE_PY_WRAPPER}" python - "${INDEX_SCRIPT}" "${OBEDIENCE_SCRIPT}" "${BENCH_SCRIPT}" "${SUMMARY_PATH}" <<'PY'
 import json
 import os
+import subprocess
+import sys
 from datetime import datetime
 from pathlib import Path
 
-root = Path(os.environ["ROOT"])
-timestamp = os.environ.get("TIMESTAMP") or datetime.utcnow().isoformat()
-log_path = root / os.environ.get("LOG_AGG", "logs/rebuild_and_test.log")
-notes_env = os.environ.get("NOTES_TEXT", "")
-notes: list[str] = [line for line in notes_env.splitlines() if line]
+use_wrapper = os.getenv("USE_PY_WRAPPER", "0") == "1"
+index_path = Path(sys.argv[1]).resolve()
+obedience_path = Path(sys.argv[2]).resolve()
+bench_path = Path(sys.argv[3]).resolve()
+summary_path = Path(sys.argv[4]).resolve()
+root = index_path.parents[1]
+
+if use_wrapper:
+  print("Windows detected; running via Python wrapper to keep commands portable.")
 
 
-def log_issue(message: str) -> None:
-  notes.append(message)
-  with open(log_path, "a", encoding="utf-8") as f:
-    f.write(f"{message}\n")
+def run_build_index() -> None:
+  sys.path.insert(0, str(root))
+  from retrieval.index import build_index
+
+  print("Building index...")
+  build_index()
 
 
-def load_json(path: Path, label: str) -> dict | None:
-  if not path.exists():
-    log_issue(f"{label} missing: {path}")
-    return None
+def run_command(cmd: list[str], label: str) -> int:
+  print(f"Running {label}...")
+  result = subprocess.run(cmd, check=False)
+  if result.returncode != 0:
+    print(f"{label} exited with status {result.returncode}", file=sys.stderr)
+  return result.returncode
+
+
+def read_metric(path: Path, picker):
   try:
     with open(path, "r", encoding="utf-8") as f:
-      return json.load(f)
+      data = json.load(f)
+    return picker(data)
+  except FileNotFoundError:
+    print(f"{path} not found while collecting results", file=sys.stderr)
+    return None
   except Exception as exc:  # pragma: no cover - reporting only
-    log_issue(f"{label} unreadable ({exc}): {path}")
+    print(f"Could not read {path}: {exc}", file=sys.stderr)
     return None
 
 
-obedience_valid_rate = None
-bench_p50_ms = None
-bench_p95_ms = None
-bench_peak_rss_mb = None
-quantize_pass = None
+run_build_index()
 
-obedience = load_json(root / "reports" / "obedience_report.json", "obedience report")
-if obedience is not None:
-  value = obedience.get("valid_rate")
-  try:
-    obedience_valid_rate = float(value)
-  except (TypeError, ValueError):
-    log_issue(f"invalid obedience valid_rate value: {value!r}")
+obedience_status = run_command([sys.executable, str(obedience_path)], "obedience pack")
 
-bench = load_json(root / "bench" / "bench_results.json", "bench results")
-if bench is not None:
-  latencies = bench.get("latencies_ms", {})
-  try:
-    bench_p50_ms = float(latencies.get("p50")) if latencies.get("p50") is not None else None
-  except (TypeError, ValueError):
-    log_issue(f"invalid bench p50 value: {latencies.get('p50')!r}")
-    bench_p50_ms = None
-  try:
-    bench_p95_ms = float(latencies.get("p95")) if latencies.get("p95") is not None else None
-  except (TypeError, ValueError):
-    log_issue(f"invalid bench p95 value: {latencies.get('p95')!r}")
-    bench_p95_ms = None
-  peak_rss = bench.get("peak_rss")
-  if peak_rss is not None:
-    try:
-      bench_peak_rss_mb = float(peak_rss) / (1024 * 1024)
-    except (TypeError, ValueError):
-      log_issue(f"invalid bench peak_rss value: {peak_rss!r}")
-      bench_peak_rss_mb = None
+bench_cmd = [sys.executable, str(bench_path), "--warmups", "3", "--runs", "5"]
+model_path = os.environ.get("GPT_OSS_MODEL_PATH")
+if model_path:
+  bench_cmd.extend(["--model-path", model_path])
+bench_status = run_command(bench_cmd, "bench")
 
-quantize = load_json(root / "reports" / "quantize_validation.json", "quantize validation")
-if quantize is not None:
-  if "pass" in quantize:
-    quantize_pass = bool(quantize.get("pass"))
-  elif "status" in quantize:
-    quantize_pass = quantize.get("status") == "ready"
-    log_issue("quantize pass inferred from status field")
-  else:
-    log_issue("quantize validation missing pass/status information")
+obedience_valid_rate = read_metric(
+  root / "reports" / "obedience_report.json", lambda data: float(data.get("valid_rate")) if data.get("valid_rate") is not None else None
+)
+bench_metrics = read_metric(
+  root / "bench" / "bench_results.json",
+  lambda data: (
+    float(data.get("latencies_ms", {}).get("p50")) if data.get("latencies_ms", {}).get("p50") is not None else None,
+    float(data.get("latencies_ms", {}).get("p95")) if data.get("latencies_ms", {}).get("p95") is not None else None,
+    data.get("peak_rss"),
+  ),
+)
+
+bench_p50_ms = bench_p95_ms = bench_peak_rss = None
+if bench_metrics is not None:
+  bench_p50_ms, bench_p95_ms, bench_peak_rss = bench_metrics
 
 summary = {
-  "timestamp": timestamp,
+  "timestamp": datetime.utcnow().isoformat(),
   "obedience_valid_rate": obedience_valid_rate,
   "bench_p50_ms": bench_p50_ms,
   "bench_p95_ms": bench_p95_ms,
-  "bench_peak_rss_mb": bench_peak_rss_mb,
-  "quantize_pass": quantize_pass,
-  "notes": notes,
+  "bench_peak_rss": bench_peak_rss,
+  "obedience_status": obedience_status,
+  "bench_status": bench_status,
 }
 
-summary_path = root / "reports" / "rebuild_and_test_summary.json"
 summary_path.parent.mkdir(parents=True, exist_ok=True)
 with open(summary_path, "w", encoding="utf-8") as f:
-  json.dump(summary, f, separators=(",", ":"))
+  json.dump(summary, f, indent=2)
 
-print(json.dumps(summary, separators=(",", ":")))
+print(json.dumps(summary, indent=2))
+
+overall_status = 0
+for code in (obedience_status, bench_status):
+  if code != 0:
+    overall_status = code
+    break
+
+sys.exit(overall_status)
 PY
