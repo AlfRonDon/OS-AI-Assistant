@@ -1,2 +1,1 @@
-﻿Model size: 66 bytes
-Model size below 300MB; treated as stub. Skipping quantize.
+﻿Model size  below 300MB; skipping quantize.
