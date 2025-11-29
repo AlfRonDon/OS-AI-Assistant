@@ -1,0 +1,172 @@
+﻿Diagnostics pack generated 2025-11-29T23:55:56.8061393+05:30
+------------------------------------------------------------
+
+[git status -sb]
+------------------------------------------------------------
+## master
+ M automation_result.json
+ D models/gpt-oss-20b.gguf
+ M reports/check_model_load_output.json
+ M reports/gguf_scan_full.txt
+ M reports/model_file_info.json
+ M reports/obedience_report.json
+ M reports/remote_adapter.log
+M  scripts/run_obedience_pack.py
+M  tests/test_obedience_pack.py
+?? .history/
+?? automation_result.json.bak.20251129203919
+?? automation_result.json.bak.20251129204033
+?? bench/__pycache__/
+?? logs/
+?? mock_os/__pycache__/
+?? models/backups/
+?? models/gpt-oss-20b/
+?? planner/__pycache__/
+?? reports/check_model_load_output_post.json.bak.20251129203807
+?? reports/check_model_load_post.txt.bak.20251129203807
+?? reports/check_model_load_run.txt
+?? reports/convert_choice.json
+?? reports/convert_conversion.log
+?? reports/convert_scan.json
+?? reports/diagnostic_pack.txt
+?? reports/download_error.txt
+?? reports/final_model_diagnostics.json
+?? reports/final_model_recovery.json.bak.20251129203832
+?? reports/final_model_recovery.json.bak.20251129203948
+?? reports/gguf_local_candidates.txt
+?? reports/gguf_scan.txt
+?? reports/local_copy.log
+?? reports/model_check.json
+?? reports/model_ls.txt
+?? reports/obedience_report_remote.json
+?? reports/pip_install_log.txt
+?? reports/planner_smoke.txt
+?? reports/planner_smoke_run.py
+?? reports/quantize_check.txt
+?? reports/recovery_context.txt
+?? reports/remote_planner_test.json
+?? reports/scan_gguf.txt
+?? reports/verify_files.txt
+?? retrieval/__pycache__/
+?? scripts/build_model_check.py
+?? scripts/check_model_load.py
+?? scripts/wsl_model_setup.sh.bak.20251129203731
+?? telemetry/__pycache__/
+?? telemetry/events.log
+?? tests/__pycache__/
+
+[git log -1]
+------------------------------------------------------------
+commit 9296ecca5e33d6b5a49760a33407b14689aab2a4
+Author: AlfRonDon <alfredrb.07@gmail.com>
+Date:   Sat Nov 29 23:53:36 2025 +0530
+
+    chore: add rebuild_and_test script
+
+[env keys (values masked)]
+------------------------------------------------------------
+__PSLockDownPolicy=***
+ALLUSERSPROFILE=***
+APPDATA=***
+APPLICATION_INSIGHTS_NO_STATSBEAT=***
+ARTIFACTS_DIR=***
+CHROME_CRASHPAD_PIPE_NAME=***
+CODEX_INTERNAL_ORIGINATOR_OVERRIDE=***
+CommonProgramFiles=***
+CommonProgramFiles(x86)=***
+CommonProgramW6432=***
+COMPUTERNAME=***
+ComSpec=***
+configsetroot=***
+DriverData=***
+EFC_7592_1262719628=***
+EFC_7592_1592913036=***
+EFC_7592_2283032206=***
+EFC_7592_2775293581=***
+EFC_7592_3789132940=***
+ELECTRON_RUN_AS_NODE=***
+FPS_BROWSER_APP_PROFILE_STRING=***
+FPS_BROWSER_USER_PROFILE_STRING=***
+HOMEDRIVE=***
+HOMEPATH=***
+LOCALAPPDATA=***
+LOGONSERVER=***
+NEURA_ALLOW_MISSING_OPENAI=***
+NUMBER_OF_PROCESSORS=***
+OneDrive=***
+OneDriveConsumer=***
+ORIGINAL_XDG_CURRENT_DESKTOP=***
+OS=***
+PATH=***
+PATHEXT=***
+PLAYWRIGHT_BROWSERS_PATH=***
+PROCESSOR_ARCHITECTURE=***
+PROCESSOR_IDENTIFIER=***
+PROCESSOR_LEVEL=***
+PROCESSOR_REVISION=***
+ProgramData=***
+ProgramFiles=***
+ProgramFiles(x86)=***
+ProgramW6432=***
+PSModulePath=***
+PUBLIC=***
+RUST_LOG=***
+SESSIONNAME=***
+SystemDrive=***
+SystemRoot=***
+TEMP=***
+TMP=***
+USERDOMAIN=***
+USERDOMAIN_ROAMINGPROFILE=***
+USERNAME=***
+USERPROFILE=***
+VSCODE_CODE_CACHE_PATH=***
+VSCODE_CRASH_REPORTER_PROCESS_TYPE=***
+VSCODE_CWD=***
+VSCODE_ESM_ENTRYPOINT=***
+VSCODE_HANDLES_UNCAUGHT_ERRORS=***
+VSCODE_IPC_HOOK=***
+VSCODE_NLS_CONFIG=***
+VSCODE_PID=***
+windir=***
+ZES_ENABLE_SYSMAN=***
+
+[models sha256 checksums]
+------------------------------------------------------------
+3340A61D1A0391E8C5B5D3463D18D4C48129A84BBC04A554C762C99020AA06ED  .\models\backups\model.safetensors.20251129_230518.bak
+3340A61D1A0391E8C5B5D3463D18D4C48129A84BBC04A554C762C99020AA06ED  .\models\backups\model.safetensors.20251129_230624.bak
+3340A61D1A0391E8C5B5D3463D18D4C48129A84BBC04A554C762C99020AA06ED  .\models\backups\model.safetensors.20251129_230725.bak
+2B701CCCEAFA5E45596CE2A3E93C81297645131307A1C63705C4F623714B28AC  .\models\backups\model.safetensors.20251129_231616.bak
+684888C0EBB17F374298B65EE2807526C066094C701BCC7EBBE1C1095F494FC1  .\models\gpt-oss-20b\.cache\huggingface\.gitignore
+EE86EDB8C8B0C95A257889B874B9C709191424F1FBB108AB3E7B112555AF015C  .\models\gpt-oss-20b\.cache\huggingface\download\original\config.json.metadata
+5711C22D5C39FC1F042E5C1C7D9FEDD100CCF2595941369B0E39E531EA53972C  .\models\gpt-oss-20b\.cache\huggingface\download\original\dtypes.json.metadata
+1E8D4FDF210845E9BADAD9D70C77CAA7C4E882477FEA0502FE9B6D0C2BCC283A  .\models\gpt-oss-20b\.cache\huggingface\download\original\model.safetensors.metadata
+317522155FC243327EE341857D0C752D0094A0817E0E9AEE2890D5AD8E009E04  .\models\gpt-oss-20b\original\config.json
+566C9E6ADED8957F41F1589CABAF73E39F2D1FCDA3351D63EFDFB7E9E78D376B  .\models\gpt-oss-20b\original\dtypes.json
+3340A61D1A0391E8C5B5D3463D18D4C48129A84BBC04A554C762C99020AA06ED  .\models\gpt-oss-20b\original\model.safetensors
+
+[top 20 largest files under models]
+------------------------------------------------------------
+13,761,300,984 bytes  .\models\backups\model.safetensors.20251129_231616.bak
+13,761,300,984 bytes  .\models\gpt-oss-20b\original\model.safetensors
+13,761,300,984 bytes  .\models\backups\model.safetensors.20251129_230725.bak
+13,761,300,984 bytes  .\models\backups\model.safetensors.20251129_230518.bak
+13,761,300,984 bytes  .\models\backups\model.safetensors.20251129_230624.bak
+       13,082 bytes  .\models\gpt-oss-20b\original\dtypes.json
+          376 bytes  .\models\gpt-oss-20b\original\config.json
+          127 bytes  .\models\gpt-oss-20b\.cache\huggingface\download\original\model.safetensors.metadata
+          104 bytes  .\models\gpt-oss-20b\.cache\huggingface\download\original\config.json.metadata
+          104 bytes  .\models\gpt-oss-20b\.cache\huggingface\download\original\dtypes.json.metadata
+            1 bytes  .\models\gpt-oss-20b\.cache\huggingface\.gitignore
+
+[first 200 lines of reports/check_model_load_output.json]
+------------------------------------------------------------
+{
+  "model_path": "models\\gpt-oss-20b.gguf",
+  "import_ok": true,
+  "import_error": null,
+  "model_exists": false,
+  "model_size_bytes": 0,
+  "run_error": "MISSING_FILE: models\\gpt-oss-20b.gguf"
+}
+
