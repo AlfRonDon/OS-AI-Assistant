@@ -1,6 +1,17 @@
 {
-  "original_failed_count": 0,
-  "fixed_attempted_count": 0,
-  "new_valid_count": 0,
-  "notes": []
+  "timestamp": "2025-11-29T23:56:01.504100+05:30",
+  "source_report": "reports\\obedience_report.json",
+  "fail_count": 0,
+  "auto_fix_entries": 0,
+  "auto_fix_file": "corpus\\auto_fixes_from_obedience.jsonl",
+  "index_rebuilt": true,
+  "replay_attempted": false,
+  "replay_returncode": null,
+  "replay_command": "python scripts/run_obedience_pack.py --replay-fails",
+  "fail_prompts": [],
+  "notes": [
+    "No failing prompts detected; auto-fix corpus left empty.",
+    "Index rebuilt from corpus directory.",
+    "Replay skipped because there were no failures."
+  ]
 }
