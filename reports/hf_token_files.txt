@@ -1,0 +1,10 @@
+﻿
+FullName                                                                          Length LastWriteTime      
+--------                                                                          ------ -------------      
+C:\Users\alfre\OS AI Agent\models\gpt-oss-20b\original\config.json                  1806 30-11-2025 02:39:19
+C:\Users\alfre\OS AI Agent\models\gpt-oss-20b\original\dtypes.json                 13082 29-11-2025 22:01:32
+C:\Users\alfre\OS AI Agent\models\gpt-oss-20b\original\model.safetensors     13761300984 29-11-2025 22:09:35
+C:\Users\alfre\OS AI Agent\models\gpt-oss-20b\original\tokenizer.json           27868174 30-11-2025 02:39:23
+C:\Users\alfre\OS AI Agent\models\gpt-oss-20b\original\tokenizer_config.json        4200 30-11-2025 02:39:19
+
+

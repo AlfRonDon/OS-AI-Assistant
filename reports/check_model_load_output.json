@@ -1,4 +1,4 @@
 ﻿{
     "status":  "skipped",
-    "reason":  "gguf missing after conversion attempts"
+    "reason":  "gguf missing after conversion retry"
 }

@@ -1,14 +1,15 @@
 ﻿{
-    "chosen_flow":  "local-conversion",
-    "convert_log":  "reports/convert_conversion.log",
-    "model_info":  "models/gpt-oss-20b.gguf is missing",
-    "check_output":  {
-                         "status":  "skipped",
-                         "reason":  "gguf missing after conversion attempts"
-                     },
-    "rebuild_summary":  null,
+    "fetch":  true,
+    "files_fetched":  [
+                          "config.json",
+                          "tokenizer.json",
+                          "tokenizer_config.json"
+                      ],
+    "conversion_success":  false,
+    "convert_log":  "reports/convert_conversion_retry.log",
+    "check_output_path":  "reports/check_model_load_output.json",
     "recommendations":  [
-                            "Add Hugging Face style metadata: set model_type to \u0027gpt_oss\u0027 and include rope_scaling {type: \u0027yarn\u0027, factor: 32.0, original_max_position_embeddings: 4096} in config.json before converting.",
-                            "Provide tokenizer assets (GPT-2 vocab/merges or tokenizer.json) for GPT-OSS; place them under models/gpt-oss-20b/original and rerun scripts/convert_safetensors_to_gguf.ps1."
+                            "Install or expose llama_cpp.convert_hf_to_gguf or use scripts/convert_hf_to_gguf.py with full dependencies (torch, gguf extras) to produce gguf.",
+                            "Once a gguf is produced, rerun python scripts/check_model_load.py to validate load and proceed with bench/obedience tests if RSS allows."
                         ]
 }

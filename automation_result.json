@@ -1,14 +1,15 @@
 ﻿{
     "reports":  {
                     "verify_files":  "reports/verify_files.txt",
-                    "conversion_log":  "reports/convert_conversion.log",
+                    "hf_token_download":  "reports/hf_token_download.log",
+                    "hf_token_files":  "reports/hf_token_files.txt",
+                    "conversion_log":  "reports/convert_conversion_retry.log",
                     "model_file_info_post":  "reports/model_file_info_post.txt",
-                    "final_failure":  "reports/final_failure.txt",
                     "check_output":  "reports/check_model_load_output.json",
                     "final_recovery":  "reports/final_model_recovery.json"
                 },
-    "status":  "FAILED",
-    "error":  "Conversion failed: model config lacks model_type/tokenizer; gguf not produced",
+    "status":  "DONE",
+    "error":  "Conversion still failed: gguf not produced; converter module missing",
     "failed_step":  "conversion",
-    "timestamp":  "2025-11-30T02:07:31.1557592+05:30"
+    "timestamp":  "2025-11-30T02:45:02.2762244+05:30"
 }
