@@ -1,1 +1,2 @@
-﻿Model size  below 300MB; skipping quantize.
+Quantize attempt skipped: no quantize/convert-gguf/convert_hf_to_gguf binaries found in PATH or /tmp/llama.cpp.
+Model missing: models/gpt-oss-20b.gguf
