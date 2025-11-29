@@ -1,8 +1,4 @@
-﻿{
-    "status":  "skipped",
-    "reason":  "Model load not sufficient for rebuild/tests.",
-    "obedience_valid_rate":  null,
-    "bench_p50":  null,
-    "bench_p95":  null,
-    "peak_rss_mb":  null
+{
+  "skipped": true,
+  "reason": "Failed to load model from file: models/gpt-oss-20b.gguf"
 }
