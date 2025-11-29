@@ -1,12 +1,14 @@
-{
-  "status": "DONE",
-  "failed_step": null,
-  "reports": {
-    "obedience": "reports/obedience_report.json",
-    "bench": "bench/bench_results.json",
-    "quantize_validation": "reports/quantize_validation.json",
-    "diagnostic_summary": "reports/diagnostic_summary.json",
-    "suggested_fixes_patch": "patches/suggested_fixes.patch"
-  },
-  "git_range": "03855730463cdc082dd5101bbd0e8bcaaae58cf8..HEAD"
+﻿{
+    "reports":  {
+                    "verify_files":  "reports/verify_files.txt",
+                    "conversion_log":  "reports/convert_conversion.log",
+                    "model_file_info_post":  "reports/model_file_info_post.txt",
+                    "final_failure":  "reports/final_failure.txt",
+                    "check_output":  "reports/check_model_load_output.json",
+                    "final_recovery":  "reports/final_model_recovery.json"
+                },
+    "status":  "FAILED",
+    "error":  "Conversion failed: model config lacks model_type/tokenizer; gguf not produced",
+    "failed_step":  "conversion",
+    "timestamp":  "2025-11-30T02:07:31.1557592+05:30"
 }

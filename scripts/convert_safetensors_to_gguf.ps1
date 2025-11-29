@@ -1,162 +1,167 @@
-[CmdletBinding()]
-param(
-    [string]$ModelPath = "models/gpt-oss-20b/original/model.safetensors",
-    [string]$OutputPath = "models/gpt-oss-20b.gguf",
-    [string]$LogPath = "reports/convert_conversion.log"
-)
+Set-StrictMode -Version Latest
+$ErrorActionPreference = 'Stop'
 
-$ErrorActionPreference = "Stop"
+# Paths
+$RepoRoot = Get-Location
+$ModelDir = Join-Path $RepoRoot "models/gpt-oss-20b/original"
+$WeightsPath = Join-Path $RepoRoot "models/gpt-oss-20b/original/model.safetensors"
+$GgufPath = Join-Path $RepoRoot "models/gpt-oss-20b.gguf"
+$ReportsDir = Join-Path $RepoRoot "reports"
+$BackupsDir = Join-Path $RepoRoot "models/backups"
+$LogPath = Join-Path $ReportsDir "convert_conversion.log"
 
-function Resolve-RepoPath {
-    param([string]$Path)
-
-    if ([string]::IsNullOrWhiteSpace($Path)) {
-        return $null
+function Initialize-Paths {
+    if (-not (Test-Path $ReportsDir)) {
+        New-Item -ItemType Directory -Path $ReportsDir | Out-Null
     }
-
-    if (Test-Path -LiteralPath $Path) {
-        return (Resolve-Path -LiteralPath $Path).Path
+    if (-not (Test-Path $BackupsDir)) {
+        New-Item -ItemType Directory -Path $BackupsDir | Out-Null
     }
+    "" | Set-Content -Path $LogPath -Encoding utf8
+}
 
-    $repoRoot = Resolve-Path (Join-Path $PSScriptRoot "..")
-    $candidate = Join-Path $repoRoot $Path
-    if (Test-Path -LiteralPath $candidate) {
-        return (Resolve-Path -LiteralPath $candidate).Path
+function Log {
+    param(
+        [Parameter(Mandatory = $true)][string] $Message
+    )
+    $timestamp = (Get-Date).ToString("s")
+    $line = "$timestamp`t$Message"
+    Add-Content -Path $LogPath -Value $line -Encoding utf8
+    Write-Host $line
+}
+
+function Backup-Weights {
+    if (-not (Test-Path $WeightsPath)) {
+        Log "Weights not found at $WeightsPath. Conversion aborted."
+        return $false
     }
+    $stamp = Get-Date -Format "yyyyMMdd_HHmmss"
+    $backupName = "model_$stamp.safetensors"
+    $backupPath = Join-Path $BackupsDir $backupName
+    Copy-Item -Path $WeightsPath -Destination $backupPath -Force
+    Log "Created backup copy at $backupPath"
+    return $true
+}
 
+function Run-Conversion {
+    param(
+        [Parameter(Mandatory = $true)][ScriptBlock] $Block,
+        [Parameter(Mandatory = $true)][string] $Label
+    )
+    Log "Starting conversion attempt: $Label"
+    try {
+        & $Block
+        $exitCode = $LASTEXITCODE
+        if ($exitCode -ne 0) {
+            Log "Attempt '$Label' exited with code $exitCode"
+            return $false
+        }
+        if (Test-Path $GgufPath) {
+            Log "Conversion succeeded via '$Label'"
+            return $true
+        }
+        Log "Attempt '$Label' completed without creating gguf."
+        return $false
+    }
+    catch {
+        Log "Attempt '$Label' failed with exception: $($_.Exception.Message)"
+        return $false
+    }
+}
+
+function Try-MethodA {
+    $block = {
+        & python -m llama_cpp.convert_hf_to_gguf --model-weights $WeightsPath --output $GgufPath 2>&1 | ForEach-Object { Log $_ }
+    }
+    return Run-Conversion -Block $block -Label "llama_cpp.convert_hf_to_gguf (python -m)"
+}
+
+function Find-ConvertScript {
+    $names = @("convert-hf-to-gguf.py", "convert_hf_to_gguf.py")
+    foreach ($name in $names) {
+        $candidate = Get-ChildItem -Path $RepoRoot -Filter $name -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
+        if ($candidate) {
+            return $candidate.FullName
+        }
+    }
     return $null
 }
 
-$repoRoot = Resolve-Path (Join-Path $PSScriptRoot "..")
-$resolvedLogPath = if (Split-Path -IsAbsolute $LogPath) { $LogPath } else { Join-Path $repoRoot $LogPath }
-$logDir = Split-Path -Parent $resolvedLogPath
-if (-not (Test-Path $logDir)) {
-    New-Item -ItemType Directory -Force -Path $logDir | Out-Null
-}
-Set-Content -Path $resolvedLogPath -Value ("== convert_safetensors_to_gguf start {0}" -f (Get-Date -Format o)) -Encoding utf8
-
-function Write-Log {
-    param([string]$Message)
-
-    $stamp = Get-Date -Format "yyyy-MM-ddTHH:mm:ssK"
-    Add-Content -Path $resolvedLogPath -Value ("[{0}] {1}" -f $stamp, $Message) -Encoding utf8
-}
-
-function Run-Command {
-    param([string[]]$CommandParts)
-
-    Write-Log ("Running: {0}" -f ($CommandParts -join " "))
-    try {
-        $output = & @CommandParts 2>&1
-        if ($output) {
-            foreach ($line in ($output -split [Environment]::NewLine)) {
-                if ($line -ne "") { Write-Log ("  {0}" -f $line) }
-            }
+function Try-MethodB {
+    $scriptPath = Find-ConvertScript
+    if (-not $scriptPath) {
+        Log "No convert-hf-to-gguf script located in repository."
+        $quantizeCandidates = @(
+            "/tmp/llama.cpp/quantize",
+            (Join-Path $RepoRoot "quantize"),
+            (Join-Path $RepoRoot "llama.cpp/quantize")
+        )
+    foreach ($qc in $quantizeCandidates) {
+        if (Test-Path $qc) {
+            Log "Found quantize binary at $qc (convert script still missing)."
         }
-        return $LASTEXITCODE
-    } catch {
-        Write-Log ("Command failed to start: {0}" -f $_.Exception.Message)
-        return 127
+        }
+        return $false
     }
-}
-
-function Test-PythonModule {
-    param([string]$ModuleName)
-
-    $exit = Run-Command @("python", "-c", "import importlib.util, sys; sys.exit(0) if importlib.util.find_spec('$ModuleName') else sys.exit(1)")
-    return ($exit -eq 0)
-}
-
-$resolvedModelPath = Resolve-RepoPath $ModelPath
-if (-not $resolvedModelPath) {
-    Write-Log "Model weights not found; expected at $ModelPath"
-    exit 1
-}
-
-$resolvedOutputPath = if (Split-Path -IsAbsolute $OutputPath) { $OutputPath } else { Join-Path $repoRoot $OutputPath }
-$outputDir = Split-Path -Parent $resolvedOutputPath
-if (-not (Test-Path $outputDir)) {
-    New-Item -ItemType Directory -Force -Path $outputDir | Out-Null
-}
-
-Write-Log ("Using model path: {0}" -f $resolvedModelPath)
-Write-Log ("Output will be written to: {0}" -f $resolvedOutputPath)
-
-# Backup original safetensors into timestamped directory.
-try {
-    $modelInfo = Get-Item -LiteralPath $resolvedModelPath
-} catch {
-    Write-Log ("Unable to stat model file: {0}" -f $_.Exception.Message)
-    exit 1
-}
-
-try {
-    $driveInfo = Get-PSDrive -Name $modelInfo.PSDrive.Name
-    if ($driveInfo.Free -lt $modelInfo.Length) {
-        Write-Log ("Not enough disk space to back up model ({0} bytes needed, {1} bytes free)." -f $modelInfo.Length, $driveInfo.Free)
-        exit 2
+    $block = {
+        & python $scriptPath --outfile $GgufPath $ModelDir 2>&1 | ForEach-Object { Log $_ }
     }
-} catch {
-    Write-Log ("Skipping free-space precheck: {0}" -f $_.Exception.Message)
+    return Run-Conversion -Block $block -Label "convert-hf-to-gguf.py ($scriptPath)"
 }
 
-$timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
-$backupDir = Join-Path $repoRoot ("models/backups/{0}" -f $timestamp)
-if (-not (Test-Path $backupDir)) {
-    New-Item -ItemType Directory -Force -Path $backupDir | Out-Null
-}
-$backupPath = Join-Path $backupDir (Split-Path -Leaf $resolvedModelPath)
+function Try-MethodC {
+    $block = {
+        $py = @"
+import json
+import os
+import sys
 
-Write-Log "Backing up original weights to $backupPath"
-try {
-    Copy-Item -LiteralPath $resolvedModelPath -Destination $backupPath -Force
-} catch {
-    Write-Log ("Backup failed: {0}" -f $_.Exception.Message)
-    exit 2
-}
+from pathlib import Path
 
-$modelDir = Split-Path -Parent $resolvedModelPath
+weights = Path(r"$WeightsPath").resolve()
+out_path = Path(r"$GgufPath").resolve()
+info = {"weights_exists": weights.exists(), "out_path": str(out_path)}
 
-# Attempt A: llama_cpp python module converter.
-$llamaCppAvailable = Test-PythonModule "llama_cpp"
-if ($llamaCppAvailable) {
-    Write-Log "Attempt A: python -m llama_cpp.convert_hf_to_gguf"
-    $exitA = Run-Command @("python", "-m", "llama_cpp.convert_hf_to_gguf", "--model", $modelDir, "--outfile", $resolvedOutputPath)
-    if ($exitA -eq 0 -and (Test-Path -LiteralPath $resolvedOutputPath)) {
-        Write-Log "Conversion succeeded via llama_cpp.convert_hf_to_gguf"
-        exit 0
+try:
+    import transformers  # type: ignore
+except Exception as exc:
+    info["error"] = f"transformers missing: {exc}"
+    print(json.dumps(info, indent=2))
+    sys.exit(0)
+
+print(json.dumps(info, indent=2))
+sys.exit(0)
+"@
+        $py | python 2>&1 | ForEach-Object { Log $_ }
     }
-    Write-Log ("Attempt A failed with exit code {0}" -f $exitA)
-} else {
-    Write-Log "Attempt A skipped; llama_cpp python module not available."
-}
-
-# Attempt B: locate local convert script in the repo.
-Write-Log "Attempt B: searching for convert-*gguf* scripts under repo"
-$converterScripts = Get-ChildItem -Path $repoRoot -Recurse -File -Include "*convert*gguf*.py" -ErrorAction SilentlyContinue
-$selectedScript = $converterScripts | Select-Object -First 1
-
-if ($selectedScript) {
-    Write-Log ("Attempting converter script: {0}" -f $selectedScript.FullName)
-    $exitB = Run-Command @("python", $selectedScript.FullName, "--model", $modelDir, "--outfile", $resolvedOutputPath)
-    if ($exitB -eq 0 -and (Test-Path -LiteralPath $resolvedOutputPath)) {
-        Write-Log ("Conversion succeeded via {0}" -f $selectedScript.FullName)
-        exit 0
+    $result = Run-Conversion -Block $block -Label "transformers fallback (no-op placeholder)"
+    if (-not $result) {
+        Log "Fallback placeholder executed; actual conversion requires available gguf converter."
     }
-    Write-Log ("Attempt B failed with exit code {0}" -f $exitB)
-} else {
-    Write-Log "No local convert-*gguf*.py script found in repository."
+    return $false
 }
 
-# Attempt C: instructions only; non-fatal exit.
-$instructions = @(
-    "No GGUF converter executed. Install llama-cpp-python (`pip install llama-cpp-python`) and rerun,",
-    "or clone llama.cpp and run its convert-hf-to-gguf.py script from the repo root.",
-    "Once a converter is available, rerun this script to produce models/gpt-oss-20b.gguf."
+Initialize-Paths
+Log "Starting safetensors -> gguf conversion helper."
+
+if (-not (Backup-Weights)) {
+    Log "Backup step failed or weights missing; stopping conversion attempts."
+    exit 0
+}
+
+$methods = @(
+    { Try-MethodA },
+    { Try-MethodB },
+    { Try-MethodC }
 )
-foreach ($line in $instructions) {
-    Write-Log $line
-    Write-Output $line
+
+foreach ($m in $methods) {
+    $success = & $m
+    if ($success) {
+        Log "Conversion finished successfully."
+        exit 0
+    }
 }
 
+Log "All conversion methods exhausted; gguf not produced. Install llama_cpp with convert helper or provide convert-hf-to-gguf.py."
 exit 0

@@ -1,33 +1,14 @@
 ﻿{
-    "path_taken":  "D",
-    "wsl_script":  "scripts/wsl_model_setup.sh",
-    "scan_candidates":  [
-
-                        ],
-    "download_attempted":  false,
-    "remote_adapter_created":  false,
-    "model_file_info":  {
-                            "length_bytes":  66,
-                            "last_write_time":  "\/Date(1764350135506)\/",
-                            "exists":  true
-                        },
-    "pre_check":  {
-                      "model_path":  "models/gpt-oss-20b.gguf",
-                      "import_ok":  true,
-                      "import_error":  null,
-                      "run_error":  "Failed to load model from file: models/gpt-oss-20b.gguf"
-                  },
-    "post_check":  {
-                       "status":  "skipped",
-                       "timestamp":  "2025-11-29T20:38:07.4120788+05:30",
-                       "reason":  "path D selected (WSL helper); no post-check run"
-                   },
-    "rebuild_test_summary":  null,
+    "chosen_flow":  "local-conversion",
+    "convert_log":  "reports/convert_conversion.log",
+    "model_info":  "models/gpt-oss-20b.gguf is missing",
+    "check_output":  {
+                         "status":  "skipped",
+                         "reason":  "gguf missing after conversion attempts"
+                     },
+    "rebuild_summary":  null,
     "recommendations":  [
-                            "No GGUF candidates \u003e300MB found; locate a real GPT-OSS model and place it at models/gpt-oss-20b.gguf.",
-                            "If you have a URL, set DOWNLOAD_URL=https://... in .env to allow automated download.",
-                            "Run scripts/wsl_model_setup.sh inside WSL to build llama.cpp tools and quantize a local model (see script instructions).",
-                            "Optionally set USE_REMOTE_MODEL=1 with REMOTE_PROVIDER to use a remote planner until a local model is available.",
-                            "Install python deps (psutil, llama-cpp-python) so check_model_load.py can validate models."
+                            "Add Hugging Face style metadata: set model_type to \u0027gpt_oss\u0027 and include rope_scaling {type: \u0027yarn\u0027, factor: 32.0, original_max_position_embeddings: 4096} in config.json before converting.",
+                            "Provide tokenizer assets (GPT-2 vocab/merges or tokenizer.json) for GPT-OSS; place them under models/gpt-oss-20b/original and rerun scripts/convert_safetensors_to_gguf.ps1."
                         ]
 }

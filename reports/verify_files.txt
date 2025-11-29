@@ -1,0 +1,11 @@
+﻿
+FullName                                                                      Length LastWriteTime      
+--------                                                                      ------ -------------      
+C:\Users\alfre\OS AI Agent\models\gpt-oss-20b\original\config.json               376 29-11-2025 22:01:32
+C:\Users\alfre\OS AI Agent\models\gpt-oss-20b\original\dtypes.json             13082 29-11-2025 22:01:32
+C:\Users\alfre\OS AI Agent\models\gpt-oss-20b\original\model.safetensors 13761300984 29-11-2025 22:09:35
+
+
+
+Test-Path .\models\gpt-oss-20b.gguf:
+False
