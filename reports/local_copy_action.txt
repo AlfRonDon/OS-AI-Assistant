@@ -1,0 +1,2 @@
+2025-11-30: Searched for *.gguf via rg --files across C:\Users\alfre, C:\Apps, C:\Documents, C:\inetpub, C:\MSI, C:\msys64, C:\path_for_chroma_db, C:\path_to_your_pdfs, C:\poppler-24.08.0, C:\Program Files, C:\Program Files (x86), C:\ProgramData (with access-denied paths), C:\User Manual, and C:\XboxGames; no candidates found.
+Wrote reports/gguf_local_candidates.txt with NONE and skipped backup/overwrite because no .gguf files were located.
