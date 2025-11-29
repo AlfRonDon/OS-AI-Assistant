@@ -1,0 +1,8 @@
+﻿OS: Microsoft Windows 11 Home Single Language
+CWD: C:\Users\alfre\OS AI Agent
+git HEAD: f244a30
+.env (masked):
+GPT_OSS_MODEL_DIR=***MASKED***
+GPT_OSS_MODEL_FILENAME=***MASKED***
+GPT_OSS_MODEL_PATH=***MASKED***
+GPT_OSS_MODEL_URL=***MASKED***

@@ -1,0 +1,1 @@
+﻿Created/updated C:\Users\alfre\OS AI Agent\scripts\wsl_model_setup.sh

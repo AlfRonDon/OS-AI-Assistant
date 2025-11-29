@@ -1,0 +1,42 @@
+﻿{
+    "found_local_candidates":  [
+
+                               ],
+    "moved_local":  false,
+    "download_attempted":  false,
+    "quantize_attempted":  true,
+    "remote_adapter_created":  false,
+    "model_file_info":  {
+                            "found":  true,
+                            "full_name":  "C:\\Users\\alfre\\OS AI Agent\\models\\gpt-oss-20b.gguf",
+                            "length":  66,
+                            "last_write_time":  "\/Date(1764350135506)\/",
+                            "is_stub":  true
+                        },
+    "check_model_load_pre":  {
+                                 "model_path":  "models/gpt-oss-20b.gguf",
+                                 "import_ok":  true,
+                                 "run_error":  "Failed to load model from file: models/gpt-oss-20b.gguf"
+                             },
+    "check_model_load_post":  {
+                                  "message":  "Model not available or below threshold.",
+                                  "status":  "skipped"
+                              },
+    "rebuild_test_summary":  {
+                                 "status":  "skipped",
+                                 "reason":  "Model load not sufficient for rebuild/tests.",
+                                 "obedience_valid_rate":  null,
+                                 "bench_p50":  null,
+                                 "bench_p95":  null,
+                                 "peak_rss_mb":  null
+                             },
+    "recommendations":  [
+                            "Place a real GPT-OSS GGUF (\u003e300MB) at models/gpt-oss-20b.gguf or point GPT_OSS_MODEL_PATH to it.",
+                            "Set a valid https DOWNLOAD_URL in .env to allow automated download when local files are missing.",
+                            "If remote inference is preferred, set USE_REMOTE_MODEL=1 and add planner/remote_adapter.py + API keys."
+                        ]
+}
+Suggested next commands:
+ - Ensure a real GGUF is available in models/
+ - Configure DOWNLOAD_URL in .env if you have a link
+ - Run bash scripts/wsl_model_setup.sh inside WSL to build quantize tools
