@@ -1,15 +1,14 @@
-﻿{
+{
+    "timestamp":  "2025-11-30T18:15:01.6478148+05:30",
+    "load_ok":  true,
+    "gguf_exists":  true,
     "reports":  {
-                    "verify_files":  "reports/verify_files.txt",
-                    "hf_token_download":  "reports/hf_token_download.log",
-                    "hf_token_files":  "reports/hf_token_files.txt",
-                    "conversion_log":  "reports/convert_conversion_retry.log",
                     "model_file_info_post":  "reports/model_file_info_post.txt",
-                    "check_output":  "reports/check_model_load_output.json",
-                    "final_recovery":  "reports/final_model_recovery.json"
+                    "final_model_recovery":  "reports/final_model_recovery.json",
+                    "convert_conversion_retry":  "reports/convert_conversion_retry_mapping.log",
+                    "check_model_load_post":  "reports/check_model_load_post.txt",
+                    "check_model_load_output_post":  "reports/check_model_load_output_post.json"
                 },
-    "status":  "DONE",
-    "error":  "Conversion still failed: gguf not produced; converter module missing",
-    "failed_step":  "conversion",
-    "timestamp":  "2025-11-30T02:45:02.2762244+05:30"
+    "mapping_patch":  true,
+    "status":  "DONE"
 }

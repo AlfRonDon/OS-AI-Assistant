@@ -3,7 +3,7 @@
   "import_ok": true,
   "import_error": null,
   "model_exists": true,
-  "model_size_bytes": 13797047968,
+  "model_size_bytes": 23148704800,
   "loader_opts": {
     "n_ctx": 512,
     "n_threads": 12,
@@ -14,5 +14,9 @@
     "use_mlock": false,
     "verbose": false
   },
-  "run_error": "Failed to load model: Failed to load model from file: models\\gpt-oss-20b.gguf"
+  "load_time_s": 4.5836,
+  "gen_time_s": 7.7402,
+  "rss_before_mb": 41.45,
+  "rss_after_mb": 6959.07,
+  "response_preview": "{'id': 'cmpl-de4df364-3bbc-4005-a6aa-8804e37c2c63', 'object': 'text_completion', 'created': 1764506646, 'model': 'models\\\\gpt-oss-20b.gguf', 'choices': [{'text': ' and, and,..\\n\\n', 'index': 0, 'logprobs': None, 'finish_reason': 'length'}], 'usage': {'prompt_tokens': 2, 'completion_tokens': 6, 'total_tokens': 8}}"
 }

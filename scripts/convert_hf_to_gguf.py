@@ -9422,7 +9422,8 @@ class GptOssModel(TextModel):
             return
         target_tensor = gguf.MODEL_TENSOR.FFN_DOWN_EXP if which == "mlp1" else gguf.MODEL_TENSOR.FFN_UP_EXP
         new_name = self.format_tensor_name(target_tensor, bid, suffix=".weight")
-        self.repack_mxfp4(new_name, blocks, scales)
+        target_ff = self.hparams.get("intermediate_size")
+        self.repack_mxfp4(new_name, blocks, scales, target_ff=target_ff)
         # clear so we do not reuse
         self._pending_blocks.pop(key, None)
         self._pending_scales.pop(key, None)
@@ -9459,7 +9460,7 @@ class GptOssModel(TextModel):
         out = (out_h >> 4) | (out_l << 4)
         return out
 
-    def repack_mxfp4(self, new_name: str, blocks: Tensor, scales: Tensor):
+    def repack_mxfp4(self, new_name: str, blocks: Tensor, scales: Tensor, target_ff: int | None = None):
         if blocks.dtype != torch.uint8:
             logger.warning(f"{new_name}: expected uint8 blocks, casting from {blocks.dtype}")
             blocks = blocks.to(torch.uint8)
@@ -9475,6 +9476,9 @@ class GptOssModel(TextModel):
         logger.info(f"Repacked {new_name} with shape {new_shape} and quantization MXFP4")
         # flatten last dim
         new_data = new_data.view(new_data.shape[0], new_data.shape[1], new_data.shape[2] * new_data.shape[3])
+        if target_ff is not None and new_data.shape[1] != target_ff:
+            logger.warning(f"{new_name}: truncating/reshaping ff dim from {new_data.shape[1]} to {target_ff}")
+            new_data = new_data[:, :target_ff, :]
         new_data = new_data.numpy()
         self.gguf_writer.add_tensor(new_name, new_data, raw_dtype=gguf.GGMLQuantizationType.MXFP4)
 
@@ -9560,7 +9564,23 @@ class GptOssModel(TextModel):
                 suffix = ".weight" if tail.endswith("weight") else ".bias"
                 gate_inp = self.format_tensor_name(gguf.MODEL_TENSOR.FFN_GATE_INP, bid, suffix)
                 gate_exp = self.format_tensor_name(gguf.MODEL_TENSOR.FFN_GATE_EXP, bid, suffix)
-                return [(gate_inp, data_torch), (gate_exp, data_torch)]
+
+                if suffix == ".weight":
+                    gate_w = data_torch
+                    n_exp = self.hparams.get("num_local_experts") or gate_w.shape[1]
+                    # shape (n_exp, n_embd, n_embd) -> (n_embd, n_embd, n_exp)
+                    diag = torch.diag_embed(gate_w)  # (n_exp, n_embd, n_embd)
+                    if bid == 0:
+                        logger.info(f"gate weight shape {tuple(gate_w.shape)}, diag shape {tuple(diag.shape)}")
+                    gate_exp_tensor = diag.contiguous()
+                    if bid == 0:
+                        logger.info(f"gate exp tensor shape {tuple(gate_exp_tensor.shape)}")
+                    return [(gate_inp, gate_w), (gate_exp, gate_exp_tensor)]
+
+                gate_b = data_torch
+                hidden = self.hparams.get("hidden_size", gate_b.shape[0])
+                gate_exp_bias = gate_b.unsqueeze(1).expand(-1, hidden).contiguous()
+                return [(gate_inp, gate_b), (gate_exp, gate_exp_bias)]
 
             if tail.startswith("mlp.mlp1_weight."):
                 if tail.endswith(".blocks"):
@@ -9579,9 +9599,25 @@ class GptOssModel(TextModel):
                 return []
 
             if tail == "mlp.mlp1_bias":
-                return [(self.format_tensor_name(gguf.MODEL_TENSOR.FFN_DOWN_EXP, bid, ".bias"), data_torch)]
+                tensor = data_torch
+                if bid == 0:
+                    logger.info(f"mlp1_bias raw shape {tuple(data_torch.shape)} -> {tuple(tensor.shape)}")
+                target_ff = self.hparams.get("intermediate_size", tensor.shape[1] if tensor.ndim > 1 else tensor.shape[0])
+                if tensor.ndim == 2 and tensor.shape[1] != target_ff:
+                    tensor = tensor[:, :target_ff].contiguous()
+                    if bid == 0:
+                        logger.info(f"mlp1_bias truncated to {tensor.shape}")
+                return [(self.format_tensor_name(gguf.MODEL_TENSOR.FFN_DOWN_EXP, bid, ".bias"), tensor)]
             if tail == "mlp.mlp2_bias":
-                return [(self.format_tensor_name(gguf.MODEL_TENSOR.FFN_UP_EXP, bid, ".bias"), data_torch)]
+                tensor = data_torch
+                if bid == 0:
+                    logger.info(f"mlp2_bias raw shape {tuple(data_torch.shape)} -> {tuple(tensor.shape)}")
+                target_ff = self.hparams.get("intermediate_size", tensor.shape[1] if tensor.ndim > 1 else tensor.shape[0])
+                if tensor.ndim == 2 and tensor.shape[1] != target_ff:
+                    tensor = tensor[:, :target_ff].contiguous()
+                    if bid == 0:
+                        logger.info(f"mlp2_bias truncated to {tensor.shape}")
+                return [(self.format_tensor_name(gguf.MODEL_TENSOR.FFN_UP_EXP, bid, ".bias"), tensor)]
 
         return [(self.map_tensor_name(name), data_torch)]
 

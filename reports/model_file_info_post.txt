@@ -1,7 +1,7 @@
 
 
 FullName : C:\Users\alfre\OS AI Agent\models\gpt-oss-20b.gguf
-Length   : 13797047968
+Length   : 23148704800
 
 
 
