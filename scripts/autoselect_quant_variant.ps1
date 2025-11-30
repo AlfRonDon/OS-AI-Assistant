@@ -1,18 +1,12 @@
-# Auto-generated update by Codex agent on 2025-12-01T01:04:00Z
-# Autoselect quantized variant based on policy in config/autoselect_policy.json
-
 [CmdletBinding()]
 param(
-    [string]$PolicyPath = (Join-Path (Join-Path (Get-Location) "config") "autoselect_policy.json"),
     [switch]$DryRun
 )
 
-if ($env:AUTOSELECT_DRY_RUN -and $env:AUTOSELECT_DRY_RUN.ToString().ToLower() -in @("1", "true", "yes")) {
-    $DryRun = $true
-}
-
-$repoRoot = Get-Location
+$scriptRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
+$repoRoot = Split-Path $scriptRoot -Parent
 $reportsDir = Join-Path $repoRoot "reports"
+$modelsDir = Join-Path $repoRoot "models"
 $logPath = Join-Path $reportsDir "autoselect.log"
 
 if (-not (Test-Path $reportsDir)) {
@@ -21,87 +15,74 @@ if (-not (Test-Path $reportsDir)) {
 
 function Write-AutoselectLog {
     param([string]$Message)
-    $timestamp = Get-Date -Format "yyyy-MM-ddTHH:mm:ssK"
-    Add-Content -Path $logPath -Value "$timestamp`t$Message"
-}
-
-function Load-Policy {
-    param([string]$Path)
-    if (-not (Test-Path $Path)) {
-        throw "Policy file not found at $Path"
-    }
-    Get-Content -Path $Path -Raw | ConvertFrom-Json -ErrorAction Stop
+    $stamp = Get-Date -Format "yyyy-MM-ddTHH:mm:ssK"
+    Add-Content -Path $logPath -Value "$stamp`t$Message"
 }
 
 try {
-    $policy = Load-Policy -Path $PolicyPath
+    $os = Get-CimInstance Win32_OperatingSystem -ErrorAction Stop
+    $freeGB = [math]::Round(($os.FreePhysicalMemory / 1024 / 1024), 2)
 } catch {
-    Write-Error $_.Exception.Message
+    Write-AutoselectLog "status=free_mem_failed; error=$($_.Exception.Message)"
+    Write-Error "Failed to read free memory: $($_.Exception.Message)"
     exit 1
 }
 
-$variants = @($policy.variants)
-if (-not $variants) {
-    Write-Error "variants list missing or empty in policy"
-    exit 1
-}
+$variant = if ($freeGB -lt 4) { "q4_K_M" } else { "q8_0" }
+$reason = if ($freeGB -lt 4) { "free_lt_4gb" } else { "default_q8_0" }
 
-$os = Get-CimInstance Win32_OperatingSystem
-$freeGB = [math]::Round(($os.FreePhysicalMemory / 1024 / 1024), 2)
-
-$chosenVariant = $null
-$reason = $null
-
-if ($policy.force_variant) {
-    $chosenVariant = $policy.force_variant
-    $reason = "force_variant"
-} elseif ($policy.rules) {
-    $rules = @($policy.rules) | Sort-Object -Property min_free_gb -Descending
-    foreach ($rule in $rules) {
-        $min = [double]$rule.min_free_gb
-        if ($freeGB -ge $min) {
-            $chosenVariant = $rule.variant
-            $reason = $rule.reason
-            break
-        }
-    }
-}
-
-if (-not $chosenVariant) {
-    $chosenVariant = $variants[-1]
-    $reason = "fallback:last_variant"
-}
-
-if ($variants -notcontains $chosenVariant) {
-    Write-Error "Chosen variant '$chosenVariant' not in variants allowlist."
-    exit 1
-}
-
-$modelsDir = Join-Path $repoRoot "models"
-$src = Join-Path $modelsDir "gpt-oss-20b-$chosenVariant.gguf"
+$src = Join-Path $modelsDir "gpt-oss-20b-$variant.gguf"
 $dest = Join-Path $modelsDir "gpt-oss-20b.gguf"
-$backupPath = $null
+$srcDir = Split-Path -Parent $src
+$destDir = Split-Path -Parent $dest
+$srcFile = Split-Path -Leaf $src
+$tempCopy = Join-Path $destDir $srcFile
 
-if (-not $DryRun -and -not (Test-Path $src)) {
+if (-not (Test-Path $src)) {
+    Write-AutoselectLog "status=missing_src; variant=$variant; freeGB=$freeGB; src=$src"
     Write-Error "Source variant not found: $src"
     exit 1
 }
 
-if (-not $DryRun) {
-    $backupDir = Join-Path $modelsDir "backups"
-    if (-not (Test-Path $backupDir)) {
-        New-Item -ItemType Directory -Path $backupDir -Force | Out-Null
-    }
-    if (Test-Path $dest) {
-        $timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
-        $backupPath = Join-Path $backupDir "gpt-oss-20b.gguf.bak.$timestamp"
-        Copy-Item $dest $backupPath -Force
-    }
-    Copy-Item $src $dest -Force
-    Write-Host "Swapped to variant: $chosenVariant (freeGB=$freeGB)"
-} else {
-    Write-Host "Dry-run: would swap to variant '$chosenVariant' (freeGB=$freeGB)"
+if ($DryRun) {
+    Write-AutoselectLog "status=dry_run; variant=$variant; freeGB=$freeGB; src=$src; dest=$dest"
+    Write-Host "Dry-run: would activate $variant (freeGB=$freeGB)"
+    exit 0
 }
 
-Write-Host "Active model target: $dest"
-Write-AutoselectLog "freeGB=$freeGB; chosen_variant=$chosenVariant; reason=$reason; dry_run=$DryRun; src=$src; dest=$dest; backup_path=$backupPath"
+$moveOk = $false
+try {
+    Move-Item -Path $src -Destination $dest -Force -ErrorAction Stop
+    $moveOk = $true
+    Write-AutoselectLog "status=move_success; variant=$variant; freeGB=$freeGB; src=$src; dest=$dest"
+} catch {
+    Write-AutoselectLog "status=move_failed; variant=$variant; freeGB=$freeGB; src=$src; dest=$dest; error=$($_.Exception.Message)"
+}
+
+if (-not $moveOk) {
+    $null = New-Item -ItemType Directory -Path $destDir -Force -ErrorAction SilentlyContinue
+    $robolog = & robocopy $srcDir $destDir $srcFile /R:1 /W:1 /IS /NFL /NDL /NP /NJH /NJS
+    $rc = $LASTEXITCODE
+    Write-AutoselectLog "status=robocopy_exit_$rc; variant=$variant; freeGB=$freeGB; src=$src; destdir=$destDir"
+    if ($rc -le 3 -and (Test-Path $tempCopy)) {
+        try {
+            if (Test-Path $dest) {
+                Remove-Item -Path $dest -Force -ErrorAction SilentlyContinue
+            }
+            Move-Item -Path $tempCopy -Destination $dest -Force -ErrorAction Stop
+            Write-AutoselectLog "status=robocopy_rename_success; variant=$variant; freeGB=$freeGB; dest=$dest"
+            Write-Host "Activated $variant via robocopy (freeGB=$freeGB)"
+            exit 0
+        } catch {
+            Write-AutoselectLog "status=robocopy_rename_failed; variant=$variant; freeGB=$freeGB; dest=$dest; error=$($_.Exception.Message)"
+            Write-Error "Robocopy rename failed: $($_.Exception.Message)"
+            exit 1
+        }
+    } else {
+        Write-Error "Robocopy failed with exit code $rc"
+        exit 1
+    }
+}
+
+Write-Host "Activated $variant via move (freeGB=$freeGB)"
+exit 0
