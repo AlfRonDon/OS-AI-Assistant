@@ -1,0 +1,23 @@
+﻿{
+    "timestamp":  "2025-11-30T18:37:28",
+    "drives":  [
+                   {
+                       "name":  "C",
+                       "root":  "C:\\",
+                       "free_bytes":  156157259776,
+                       "used_bytes":  333164920832,
+                       "total_bytes":  489322180608
+                   }
+               ],
+    "paths":  {
+                  "models":  {
+                                 "path":  "models",
+                                 "size_bytes":  50727068881
+                             },
+                  "original_model":  {
+                                         "path":  "models\\gpt-oss-20b\\original",
+                                         "size_bytes":  13789188246
+                                     }
+              },
+    "reclaimable_bytes":  13789188246
+}

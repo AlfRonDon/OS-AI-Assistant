@@ -1,0 +1,7 @@
+﻿Space estimate report (2025-11-30 18:37:28Z)
+Models directory: models -> 47.24 GB
+Original safetensors directory: models\gpt-oss-20b\original -> 12.84 GB
+Estimated reclaimable by archiving: 12.84 GB
+
+Drive summary:
+  C (C:\) Free: 145.43 GB / Total: 455.72 GB

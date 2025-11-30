@@ -1,0 +1,10 @@
+﻿Free-space dry run (2025-11-30 18:37:49Z)
+No changes were made; this is a report of what would be removed or relocated.
+
+Archive candidate: models/gpt-oss-20b/original/model.safetensors -> 12.82 GB
+
+Backups eligible for deletion: none (<= retention).
+
+Logs eligible for deletion: none.
+
+Total potential reclaimable space: 12.82 GB

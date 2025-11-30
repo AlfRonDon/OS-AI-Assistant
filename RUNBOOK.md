@@ -28,3 +28,11 @@
 - Run `mock_os/undo` to restore the last checkpointed state.
 - Check `telemetry/events.log` to find the planner output hash that led to the bad action.
 - Restore the corresponding state snapshot if needed, and open an issue with details for follow-up.
+
+## Model storage & cleanup
+- Point archives to an external path with plenty of free space (e.g., `D:\model_archives\`); avoid filling the system drive.
+- Copy and verify the original safetensors with `scripts/archive_model.ps1`; choose the symlink option to replace `models/gpt-oss-20b/original/model.safetensors` with a link pointing at the archived copy when you want the local footprint minimized.
+- Manual symlink fallback: remove or move the original file, then run `New-Item -ItemType SymbolicLink -Path models/gpt-oss-20b/original/model.safetensors -Target <archived-path>`.
+- Keep only the newest 3 backups in `models/backups/` using `scripts/rotate_backups.ps1` (double confirmation required before deletion).
+- Compress routine logs with `scripts/cleanup_logs.ps1` (or `.sh` in WSL); archives land in `logs/archive/` and raw logs older than 90 days are cleared.
+- Checklist: run `scripts/estimate_free_space.ps1`, pick an archive destination, run `scripts/free_space_dryrun.ps1`, archive the model, rotate backups, clean logs, and rerun the estimate to confirm reclaimed space.
