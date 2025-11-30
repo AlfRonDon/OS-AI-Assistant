@@ -1,0 +1,42 @@
+{
+  "timestamp": "2025-11-30T14:30:00.336747Z",
+  "baseline": "q8_0",
+  "entries": [
+    {
+      "variant": "q4_0",
+      "path": "models\\gpt-oss-20b-q4_0.gguf",
+      "size_bytes": 12098674720,
+      "p50_ms": 3448.6495000019204,
+      "p95_ms": 5616.120959992985,
+      "peak_rss_mb": 8699.75,
+      "success": true,
+      "log_path": "logs\\bench_q4_0.log",
+      "quantize_log": "reports\\quantize_q4_0.log",
+      "recommended": false
+    },
+    {
+      "variant": "q4_K_M",
+      "path": "models\\gpt-oss-20b-q4_K_M.gguf",
+      "size_bytes": 15805119520,
+      "p50_ms": 3277.9818999988493,
+      "p95_ms": 5387.209900002926,
+      "peak_rss_mb": 14262.47,
+      "success": true,
+      "log_path": "logs\\bench_q4_K_M.log",
+      "quantize_log": "reports\\quantize_q4_K_M.log",
+      "recommended": false
+    },
+    {
+      "variant": "q8_0",
+      "path": "models\\gpt-oss-20b-q8_0.gguf",
+      "size_bytes": 22261895200,
+      "p50_ms": 936.8944000016199,
+      "p95_ms": 4414.381579993641,
+      "peak_rss_mb": 10218.42,
+      "success": true,
+      "log_path": "logs\\bench_q8_0.log",
+      "quantize_log": "reports\\quantize_q8_0.log",
+      "recommended": false
+    }
+  ]
+}

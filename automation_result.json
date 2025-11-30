@@ -1,15 +1,31 @@
 {
-  "timestamp": "2025-11-30T13:26:17.727773Z",
-  "status": "UPDATED",
-  "reports": {
-    "remote_adapter_log": "reports/remote_adapter.log",
-    "remote_adapter_test": "reports/remote_adapter_test.txt",
-    "remote_planner_test": "reports/remote_planner_test.json"
+  "timestamp": "2025-11-30T14:30:39.400884Z",
+  "model": "models/gpt-oss-20b.gguf",
+  "quantized_variants": [
+    "q4_0",
+    "q4_K_M",
+    "q8_0"
+  ],
+  "summary": "reports/quantize_summary.json",
+  "quantize_tool_check": "reports/quantize_tool_check.txt",
+  "quantize_logs": {
+    "q4_0": "reports/quantize_q4_0.log",
+    "q4_K_M": "reports/quantize_q4_K_M.log",
+    "q8_0": "reports/quantize_q8_0.log"
   },
-  "tests": {
-    "pytest": [
-      "tests/test_runner_remote_toggle.py"
-    ]
+  "bench_results": {
+    "q4_0": "bench/bench_results_q4_0.json",
+    "q4_K_M": "bench/bench_results_q4_K_M.json",
+    "q8_0": "bench/bench_results_q8_0.json"
   },
-  "smoke_test": "Skipped remote adapter smoke test: USE_REMOTE_MODEL!=1, OPENAI_API_KEY missing."
+  "bench_logs": {
+    "q4_0": "logs/bench_q4_0.log",
+    "q4_K_M": "logs/bench_q4_K_M.log",
+    "q8_0": "logs/bench_q8_0.log"
+  },
+  "status": "DONE_WITH_WARNINGS",
+  "notes": [
+    "Bench runs returned exit code 1 because p95 latencies exceeded default threshold, but metrics were collected.",
+    "Quantization used python llama_cpp.llama_model_quantize fallback; no external quantize binary detected."
+  ]
 }

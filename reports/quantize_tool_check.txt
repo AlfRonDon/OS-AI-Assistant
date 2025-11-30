@@ -1,0 +1,13 @@
+Timestamp: 2025-11-30T18:37:33.585292
+Model exists: True
+Model size bytes: 23148704800
+Disk total bytes: 489322180608
+Disk free bytes: 156157145088
+Estimated additional bytes needed (len=3): 69446114400
+Tools:
+ - /tmp/llama.cpp/quantize: False
+ - ./quantize: False
+ - gguf-tools in PATH: False
+ - llama-quantize in PATH: False
+ - llama_cpp importable: True
+Using llama_cpp.llama_model_quantize as fallback: available

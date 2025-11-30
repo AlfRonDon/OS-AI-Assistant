@@ -69,7 +69,17 @@ def embed_texts(texts: List[str]):
                 break
             llama_vectors.append(vec)
         if llama_vectors:
-            return np.asarray(llama_vectors, dtype="float32") if np is not None else llama_vectors
+            dims = {len(v) for v in llama_vectors if hasattr(v, "__len__")}
+            flat_numbers = all(isinstance(x, (int, float)) for v in llama_vectors for x in v)
+            if len(dims) == 1 and flat_numbers:
+                if np is None:
+                    return llama_vectors
+                try:
+                    return np.asarray(llama_vectors, dtype="float32")
+                except Exception:
+                    llama_vectors = []
+            else:
+                llama_vectors = []
 
     hashed_vectors = [_hash_vector(t) for t in texts]
     return np.asarray(hashed_vectors, dtype="float32") if np is not None else hashed_vectors
