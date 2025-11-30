@@ -14,8 +14,19 @@ except ImportError:  # pragma: no cover
     jsonschema = None  # type: ignore
 
 logger = logging.getLogger(__name__)
-
+_LOG_PATH = Path(__file__).resolve().parents[1] / "reports" / "remote_adapter.log"
 _SCHEMA_CACHE: Dict[str, Any] | None = None
+
+
+def _ensure_logger() -> None:
+    if logger.handlers:
+        return
+    _LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
+    handler = logging.FileHandler(_LOG_PATH, encoding="utf-8")
+    handler.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(message)s"))
+    logger.addHandler(handler)
+    logger.setLevel(logging.INFO)
+    logger.propagate = False
 
 
 def _schema_path() -> Path:
@@ -41,35 +52,27 @@ def _function_parameters_schema() -> Dict[str, Any]:
 
 def _validate_plan(payload: Dict[str, Any]) -> None:
     schema = _planner_schema()
-    if jsonschema is not None:
-        jsonschema.Draft7Validator(schema).validate(payload)
-        return
-
-    required = schema.get("required", [])
-    for key in required:
-        if key not in payload:
-            raise ValueError(f"missing required field: {key}")
-
-    steps = payload.get("steps")
-    if not isinstance(steps, list) or not steps:
-        raise ValueError("steps must be a non-empty list")
-    for step in steps:
-        if not isinstance(step, dict):
-            raise ValueError("step entries must be objects")
-        for field in ("step_label", "api_call", "args", "expected_state"):
-            if field not in step:
-                raise ValueError(f"step missing {field}")
+    if jsonschema is None:
+        raise RuntimeError("jsonschema is required to validate remote planner output")
+    jsonschema.Draft7Validator(schema).validate(payload)
 
 
-def _error_response(user_query: str, reason: str) -> Dict[str, Any]:
-    return {
-        "intent": user_query,
-        "slots": {},
-        "steps": [],
-        "sources": [],
-        "confidence": 0.0,
-        "error": reason,
-    }
+def _mask_secret(value: str | None) -> str:
+    if not value:
+        return ""
+    if len(value) <= 8:
+        return "***"
+    return f"{value[:4]}***{value[-2:]}"
+
+
+def _safe_json(obj: Any, limit: int = 4000) -> str:
+    try:
+        text = json.dumps(obj, ensure_ascii=False)
+    except Exception:
+        text = str(obj)
+    if len(text) > limit:
+        return f"{text[:limit]}...(truncated)"
+    return text
 
 
 def _parse_json_fragment(text: str) -> Dict[str, Any] | None:
@@ -89,20 +92,6 @@ def _parse_json_fragment(text: str) -> Dict[str, Any] | None:
     return None
 
 
-def _common_messages(retrieval_snippets: List[Any], state_snapshot: Dict[str, Any], user_query: str) -> Dict[str, Any]:
-    payload = {
-        "user_query": user_query,
-        "retrieval_snippets": retrieval_snippets,
-        "state_snapshot": state_snapshot,
-    }
-    system_text = (
-        "You are a deterministic planning engine. "
-        "Use the emit_plan function to return a JSON payload that matches the PlannerOutput schema. "
-        "Do not return text outside the JSON and avoid extra keys."
-    )
-    return {"system_text": system_text, "user_payload": payload}
-
-
 def _openai_headers() -> Dict[str, str]:
     api_key = os.getenv("OPENAI_API_KEY")
     if not api_key:
@@ -120,15 +109,40 @@ def _openai_headers() -> Dict[str, str]:
     return headers
 
 
+def _masked_headers(headers: Dict[str, str]) -> Dict[str, str]:
+    masked = {}
+    for key, value in headers.items():
+        if "authorization" in key.lower():
+            token = value.split("Bearer")[-1].strip() if "Bearer" in value else value
+            masked[key] = f"Bearer {_mask_secret(token)}"
+        else:
+            masked[key] = value
+    return masked
+
+
+def _common_messages(retrieval_snippets: List[Any], state_snapshot: Dict[str, Any], user_query: str) -> Dict[str, Any]:
+    payload = {
+        "user_query": user_query,
+        "retrieval_snippets": retrieval_snippets,
+        "state_snapshot": state_snapshot,
+    }
+    system_text = (
+        "You are a deterministic planning engine. "
+        "Return only a single JSON object that matches the PlannerOutput schema in contracts/planner_output.schema.json. "
+        "Do not include any text outside the JSON object and do not invent additional fields."
+    )
+    return {"system_text": system_text, "user_payload": payload}
+
+
 def _call_openai(
     retrieval_snippets: List[Any], state_snapshot: Dict[str, Any], user_query: str, timeout_seconds: int
 ) -> Dict[str, Any]:
+    prompts = _common_messages(retrieval_snippets, state_snapshot, user_query)
+    parameters_schema = _function_parameters_schema()
     model = os.getenv("REMOTE_OPENAI_MODEL", os.getenv("OPENAI_MODEL", "gpt-4.1"))
     base_url = os.getenv("OPENAI_BASE_URL", os.getenv("REMOTE_OPENAI_BASE_URL", "https://api.openai.com/v1")).rstrip("/")
     url = f"{base_url}/chat/completions"
 
-    prompts = _common_messages(retrieval_snippets, state_snapshot, user_query)
-    parameters_schema = _function_parameters_schema()
     messages = [
         {"role": "system", "content": prompts["system_text"]},
         {"role": "user", "content": json.dumps(prompts["user_payload"], ensure_ascii=False)},
@@ -151,21 +165,36 @@ def _call_openai(
         "response_format": {"type": "json_object"},
     }
 
-    response = requests.post(url, headers=_openai_headers(), json=payload, timeout=timeout_seconds)
+    headers = _openai_headers()
+    logger.info(
+        "remote adapter request provider=openai model=%s url=%s headers=%s payload=%s",
+        model,
+        url,
+        _masked_headers(headers),
+        _safe_json({"messages": messages, "model": model, "tools": payload["tools"], "response_format": payload["response_format"]}),
+    )
+    response = requests.post(url, headers=headers, json=payload, timeout=timeout_seconds)
+    logger.info("remote adapter response provider=openai status=%s body=%s", response.status_code, _safe_json(response.text))
     response.raise_for_status()
     data = response.json()
     choices = data.get("choices") or []
     if not choices:
-        raise RuntimeError("no choices returned")
+        raise RuntimeError("no choices returned from OpenAI")
     message = choices[0].get("message", {})
     parsed: Dict[str, Any] | None = None
 
-    tool_calls = message.get("tool_calls") or []
-    if tool_calls:
-        arguments = tool_calls[0].get("function", {}).get("arguments", "")
-        parsed = _parse_json_fragment(arguments)
+    content = message.get("content", "")
+    parsed = _parse_json_fragment(content) if content else None
+
     if parsed is None:
-        parsed = _parse_json_fragment(message.get("content", ""))
+        function_call = message.get("function_call") or {}
+        arguments = function_call.get("arguments")
+        tool_calls = message.get("tool_calls") or []
+        if arguments:
+            parsed = _parse_json_fragment(arguments)
+        elif tool_calls:
+            first_call = tool_calls[0].get("function", {}) if tool_calls else {}
+            parsed = _parse_json_fragment(first_call.get("arguments", ""))
 
     if parsed is None:
         raise RuntimeError("unable to parse JSON from OpenAI response")
@@ -175,15 +204,16 @@ def _call_openai(
 def _call_google(
     retrieval_snippets: List[Any], state_snapshot: Dict[str, Any], user_query: str, timeout_seconds: int
 ) -> Dict[str, Any]:
+    prompts = _common_messages(retrieval_snippets, state_snapshot, user_query)
+    parameters_schema = _function_parameters_schema()
     api_key = os.getenv("GOOGLE_API_KEY")
     if not api_key:
         raise RuntimeError("GOOGLE_API_KEY is required for REMOTE_PROVIDER=google")
     model = os.getenv("REMOTE_GOOGLE_MODEL", os.getenv("GOOGLE_MODEL", "gemini-1.5-pro-latest"))
     base_url = os.getenv("GOOGLE_API_BASE", "https://generativelanguage.googleapis.com")
     url = f"{base_url.rstrip('/')}/v1beta/models/{model}:generateContent?key={api_key}"
+    masked_url = url.replace(api_key, _mask_secret(api_key))
 
-    prompts = _common_messages(retrieval_snippets, state_snapshot, user_query)
-    parameters_schema = _function_parameters_schema()
     payload = {
         "systemInstruction": {"parts": [{"text": prompts["system_text"]}]},
         "contents": [{"role": "user", "parts": [{"text": json.dumps(prompts["user_payload"], ensure_ascii=False)}]}],
@@ -192,12 +222,14 @@ def _call_google(
         "generationConfig": {"temperature": 0},
     }
 
+    logger.info("remote adapter request provider=google model=%s url=%s payload=%s", model, masked_url, _safe_json(payload))
     response = requests.post(url, json=payload, timeout=timeout_seconds)
+    logger.info("remote adapter response provider=google status=%s body=%s", response.status_code, _safe_json(response.text))
     response.raise_for_status()
     data = response.json()
     candidates = data.get("candidates") or []
     if not candidates:
-        raise RuntimeError("no candidates returned")
+        raise RuntimeError("no candidates returned from Google")
 
     candidate = candidates[0]
     content = candidate.get("content") or candidate
@@ -223,12 +255,18 @@ def _call_google(
 
 
 def call_remote_planner(
-    retrieval_snippets: List[Any], state_snapshot: Dict[str, Any], user_query: str, timeout_seconds: int = 20
+    retrieval_snippets: List[Any],
+    state_snapshot: Dict[str, Any],
+    user_query: str,
+    timeout: int = 10,
+    **kwargs: Any,
 ) -> Dict[str, Any]:
     """
     Invoke a remote planner provider (OpenAI or Google) and return a PlannerOutput-compatible dict.
     Validation against the PlannerOutput schema is enforced before returning the payload.
     """
+    _ensure_logger()
+    timeout_seconds = int(kwargs.pop("timeout_seconds", timeout) or timeout)
     provider = (os.getenv("REMOTE_PROVIDER", "openai") or "openai").strip().lower()
     try:
         if provider == "openai":
@@ -239,10 +277,16 @@ def call_remote_planner(
             raise ValueError(f"unsupported REMOTE_PROVIDER '{provider}'")
 
         _validate_plan(plan)
+        logger.info(
+            "remote adapter validated provider=%s confidence=%s steps=%s",
+            provider,
+            plan.get("confidence"),
+            len(plan.get("steps", [])) if isinstance(plan.get("steps"), list) else 0,
+        )
         return plan
     except Exception as exc:
-        logger.error("remote planner failed for provider %s: %s", provider, exc)
-        return _error_response(user_query, f"REMOTE_CALL_FAIL: {exc}")
+        logger.exception("remote planner failed for provider %s", provider)
+        raise RuntimeError(f"Remote planner failed for provider '{provider}': {exc}") from exc
 
 
 def minimal_sanity_check(planner_output: Dict[str, Any]) -> bool:

@@ -1,0 +1,23 @@
+{
+  "intent": "Plan how to organize notes about this workspace.",
+  "slots": {},
+  "steps": [
+    {
+      "step_label": "log_fallback_intent",
+      "api_call": "append_log",
+      "args": {
+        "message": "Plan how to organize notes about this workspace."
+      },
+      "expected_state": {
+        "logs": [
+          "Plan how to organize notes about this workspace."
+        ]
+      }
+    }
+  ],
+  "sources": [
+    "Workspace includes planner, mock_os, and retrieval packages.",
+    "Planners emit step_label, api_call, args, expected_state fields."
+  ],
+  "confidence": 0.4
+}

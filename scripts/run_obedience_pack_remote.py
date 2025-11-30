@@ -53,7 +53,7 @@ def run_once(prompt, idx):
     except Exception:
         state = {"windows": [], "permissions": [], "clipboard": None}
     # call remote adapter
-    out = remote_adapter.call_remote_planner(snippets, state, prompt, timeout_seconds=15)
+    out = remote_adapter.call_remote_planner(snippets, state, prompt, timeout=15)
     # minimal sanity
     valid = remote_adapter.minimal_sanity_check(out)
     result = {

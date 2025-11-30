@@ -21,6 +21,11 @@ try:
 except ImportError:  # pragma: no cover
     Llama = None  # type: ignore
 
+try:
+    from planner import remote_adapter  # type: ignore
+except Exception:  # pragma: no cover - optional dependency
+    remote_adapter = None  # type: ignore
+
 
 _LLM = None
 logger = logging.getLogger(__name__)
@@ -188,21 +193,16 @@ def _deterministic_plan(retrieval_snippets: List[str], state_snapshot: Dict[str,
 
 def run_planner(retrieval_snippets: List[str], state_snapshot: Dict[str, Any], user_query: str):
     prompt = build_prompt(retrieval_snippets, state_snapshot, user_query)
-    use_remote = (os.getenv("USE_REMOTE_MODEL") or "").strip() == "1"
+    use_remote = (os.getenv("USE_REMOTE_MODEL") or "").strip() == "1" and remote_adapter is not None
     model_plan = None
     used_fallback = False
     raw_plan: Dict[str, Any] = {}
 
     if use_remote:
         try:
-            from planner import remote_adapter
-
             remote_plan = remote_adapter.call_remote_planner(retrieval_snippets, state_snapshot, user_query)
-            remote_error = isinstance(remote_plan, dict) and remote_plan.get("error")
-            if remote_plan and not remote_error:
+            if remote_plan:
                 model_plan = remote_plan
-            else:
-                logger.warning("remote planner returned error (%s); falling back to local runner", remote_error)
         except Exception as exc:
             logger.error("remote planner call failed: %s", exc)
 

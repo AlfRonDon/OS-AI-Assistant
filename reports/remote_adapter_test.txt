@@ -1,0 +1,1 @@
+Skipped remote adapter smoke test: USE_REMOTE_MODEL!=1, OPENAI_API_KEY missing.
