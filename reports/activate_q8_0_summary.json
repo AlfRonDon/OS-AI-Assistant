@@ -1,0 +1,9 @@
+{
+  "timestamp": "2025-11-30T17:23:29.907243+00:00",
+  "swap_success": true,
+  "smoke_load": true,
+  "index_rebuilt": true,
+  "obedience_pass_rate": 1.0,
+  "bench_results": "bench/bench_results_q8_0_active.json",
+  "recommended_variant": "q8_0"
+}

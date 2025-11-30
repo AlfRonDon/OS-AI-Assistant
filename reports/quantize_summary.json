@@ -38,5 +38,6 @@
       "quantize_log": "reports\\quantize_q8_0.log",
       "recommended": false
     }
-  ]
+  ],
+  "recommended": "q8_0"
 }

@@ -1,0 +1,7 @@
+load_success: True
+load_time_sec: 3.948
+rss_before_bytes: 43315200
+rss_after_load_bytes: 147034112
+rss_after_gen_bytes: 5241589760
+gen_success: True
+generated_text: 不要不要不要不要 sober sober sober sober sober sober sober sober sober sober sober sober
