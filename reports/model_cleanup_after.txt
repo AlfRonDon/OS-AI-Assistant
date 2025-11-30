@@ -1,0 +1,10 @@
+ 22,076.33 MB | C:\Users\alfre\OS AI Agent\models\backups\gpt-oss-20b.gguf.bak.20251130190057
+ 22,076.33 MB | C:\Users\alfre\OS AI Agent\models\backups\gpt-oss-20b.gguf.bak.20251130191415
+ 13,123.80 MB | C:\Users\alfre\OS AI Agent\models\backups\gpt-oss-20b_model_20251130_030547.safetensors
+ 11,538.20 MB | C:\Users\alfre\OS AI Agent\models\backups\gpt-oss-20b-q4_0.gguf.bak.20251130193536
+    924.53 MB | C:\Users\alfre\OS AI Agent\models\backups\gpt-oss-20b-q4_0.gguf.failed.20251130184118
+ 22,076.33 MB | C:\Users\alfre\OS AI Agent\models\gpt-oss-20b.gguf
+ 13,123.80 MB | C:\Users\alfre\OS AI Agent\models\gpt-oss-20b\original\model.safetensors
+ 11,538.20 MB | C:\Users\alfre\OS AI Agent\models\gpt-oss-20b-q4_0.gguf
+ 15,072.94 MB | C:\Users\alfre\OS AI Agent\models\gpt-oss-20b-q4_K_M.gguf
+ 21,230.60 MB | C:\Users\alfre\OS AI Agent\models\gpt-oss-20b-q8_0.gguf

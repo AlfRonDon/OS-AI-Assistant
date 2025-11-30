@@ -1,0 +1,95 @@
+{
+  "generated_at": "2025-11-30T16:13:19.054360Z",
+  "threshold_bytes": 104857600,
+  "hf_threshold_bytes": 209715200,
+  "entries": [
+    {
+      "path": "C:\\Users\\alfre\\OS AI Agent\\models\\gpt-oss-20b-q4_0.gguf",
+      "size_bytes": 12098674720,
+      "category": "other",
+      "last_write": "2025-11-30T19:41:00.393669",
+      "last_access": "2025-11-30T21:42:43.893374",
+      "delete": false
+    },
+    {
+      "path": "C:\\Users\\alfre\\OS AI Agent\\models\\gpt-oss-20b-q4_K_M.gguf",
+      "size_bytes": 15805119520,
+      "category": "other",
+      "last_write": "2025-11-30T19:13:46.090546",
+      "last_access": "2025-11-30T21:43:03.804490",
+      "delete": false
+    },
+    {
+      "path": "C:\\Users\\alfre\\OS AI Agent\\models\\gpt-oss-20b-q8_0.gguf",
+      "size_bytes": 22261895200,
+      "category": "other",
+      "last_write": "2025-11-30T19:30:55.767498",
+      "last_access": "2025-11-30T21:43:09.622116",
+      "delete": false
+    },
+    {
+      "path": "C:\\Users\\alfre\\OS AI Agent\\models\\gpt-oss-20b.gguf",
+      "size_bytes": 23148704800,
+      "category": "other",
+      "last_write": "2025-11-30T18:12:56.786232",
+      "last_access": "2025-11-30T21:41:42.584015",
+      "delete": false
+    },
+    {
+      "path": "C:\\Users\\alfre\\OS AI Agent\\models\\backups\\gpt-oss-20b-q4_0.gguf.bak.20251130193536",
+      "size_bytes": 12098674720,
+      "category": "other",
+      "last_write": "2025-11-30T19:00:22.565351",
+      "last_access": "2025-11-30T21:42:00.564723",
+      "delete": false
+    },
+    {
+      "path": "C:\\Users\\alfre\\OS AI Agent\\models\\backups\\gpt-oss-20b-q4_0.gguf.failed.20251130184118",
+      "size_bytes": 969436960,
+      "category": "other",
+      "last_write": "2025-11-30T18:40:32.019434",
+      "last_access": "2025-11-30T21:42:06.185110",
+      "delete": false
+    },
+    {
+      "path": "C:\\Users\\alfre\\OS AI Agent\\models\\backups\\gpt-oss-20b.gguf.bak.20251130190057",
+      "size_bytes": 23148704800,
+      "category": "other",
+      "last_write": "2025-11-30T18:12:56.786232",
+      "last_access": "2025-11-30T21:42:13.911123",
+      "delete": false
+    },
+    {
+      "path": "C:\\Users\\alfre\\OS AI Agent\\models\\backups\\gpt-oss-20b.gguf.bak.20251130191415",
+      "size_bytes": 23148704800,
+      "category": "other",
+      "last_write": "2025-11-30T18:12:56.786232",
+      "last_access": "2025-11-30T21:42:21.408005",
+      "delete": false
+    },
+    {
+      "path": "C:\\Users\\alfre\\OS AI Agent\\models\\backups\\gpt-oss-20b_model_20251130_030547.safetensors",
+      "size_bytes": 13761300984,
+      "category": "B",
+      "last_write": "2025-11-30T03:05:57.060615",
+      "last_access": "2025-11-30T21:42:26.340692",
+      "delete": false
+    },
+    {
+      "path": "C:\\Users\\alfre\\OS AI Agent\\models\\gpt-oss-20b\\original\\model.safetensors",
+      "size_bytes": 13761300984,
+      "category": "other",
+      "last_write": "2025-11-29T22:09:35.329885",
+      "last_access": "2025-11-30T21:43:13.931480",
+      "delete": false
+    },
+    {
+      "path": "C:\\Users\\alfre\\.cache\\huggingface\\hub\\models--unstructuredio--yolo_x_layout\\snapshots\\2d74dcd1432f37c7141ce0a37f6eed085f34c420\\yolox_l0.05.onnx",
+      "size_bytes": 216625723,
+      "category": "E",
+      "last_write": "2024-11-06T13:49:40.307000",
+      "last_access": "2024-11-07T20:32:29.619505",
+      "delete": false
+    }
+  ]
+}

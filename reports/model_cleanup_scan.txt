@@ -1,0 +1,11 @@
+    206.59 MB | C:\Users\alfre\.cache\huggingface\hub\models--unstructuredio--yolo_x_layout\snapshots\2d74dcd1432f37c7141ce0a37f6eed085f34c420\yolox_l0.05.onnx
+    924.53 MB | C:\Users\alfre\OS AI Agent\models\backups\gpt-oss-20b-q4_0.gguf.failed.20251130184118
+  11538.20 MB | C:\Users\alfre\OS AI Agent\models\backups\gpt-oss-20b-q4_0.gguf.bak.20251130193536
+  11538.20 MB | C:\Users\alfre\OS AI Agent\models\gpt-oss-20b-q4_0.gguf
+  13123.80 MB | C:\Users\alfre\OS AI Agent\models\backups\gpt-oss-20b_model_20251130_030547.safetensors
+  13123.80 MB | C:\Users\alfre\OS AI Agent\models\gpt-oss-20b\original\model.safetensors
+  15072.94 MB | C:\Users\alfre\OS AI Agent\models\gpt-oss-20b-q4_K_M.gguf
+  21230.60 MB | C:\Users\alfre\OS AI Agent\models\gpt-oss-20b-q8_0.gguf
+  22076.33 MB | C:\Users\alfre\OS AI Agent\models\backups\gpt-oss-20b.gguf.bak.20251130190057
+  22076.33 MB | C:\Users\alfre\OS AI Agent\models\backups\gpt-oss-20b.gguf.bak.20251130191415
+  22076.33 MB | C:\Users\alfre\OS AI Agent\models\gpt-oss-20b.gguf
