@@ -1,0 +1,4 @@
+CI runs `pytest -q` (see .github/workflows/ci.yml) with junit output to reports/tests/junit.xml. Use scripts/run_local_tests.sh or scripts/run_local_tests.ps1 to mirror locally; both install pytest/jsonschema/psutil and write logs to reports/tests/pytest_output.txt.
+Model smoke test loads models/gpt-oss-20b.gguf only when the file exists or CI_USE_REMOTE_MODEL is set (can be injected via $GITHUB_ENV in GitHub Actions); avoid committing model weights.
+Bench thresholds: peak_rss target <20GB (warn to <40GB), p95 latency target <2000ms (warn to <5000ms).
+Planner schema test validates planner output against contracts/planner_output.schema.json; install jsonschema if skipped.

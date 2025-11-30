@@ -1,0 +1,42 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Cache pip
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('requirements-dev.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-dev.txt
+
+      - name: Run tests
+        env:
+          CI_USE_REMOTE_MODEL: ${{ secrets.CI_USE_REMOTE_MODEL }}
+        run: |
+          mkdir -p reports/tests
+          # Model-dependent smoke tests only run when CI_USE_REMOTE_MODEL is set or when a runner injects it via $GITHUB_ENV. Never commit or upload GGUF weights to the repo.
+          if [ -z "${CI_USE_REMOTE_MODEL:-}" ] && [ ! -f models/gpt-oss-20b.gguf ]; then
+            echo "No CI_USE_REMOTE_MODEL secret and no local model; heavy model smoke test will skip."
+          elif [ -n "${CI_USE_REMOTE_MODEL:-}" ]; then
+            echo "CI_USE_REMOTE_MODEL provided; model smoke test enabled."
+          fi
+          pytest tests -q --junitxml reports/tests/junit.xml

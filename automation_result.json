@@ -1,19 +1,58 @@
 {
   "status": "DONE",
   "timestamp": "2025-11-30T18:45:00Z",
+  "load_ok": true,
+  "gguf_exists": true,
+  "reclaimable_bytes": 13789188246,
+  "reclaimable_gb": 12.84,
   "tests": {
     "model_smoke": "tests/test_model_smoke.py",
     "bench_thresholds": "tests/test_bench_thresholds.py",
     "planner_schema": "tests/test_planner_schema.py"
   },
   "ci_workflow": ".github/workflows/ci.yml",
-  "scripts": {
-    "run_local_tests_sh": "scripts/run_local_tests.sh",
-    "run_local_tests_ps1": "scripts/run_local_tests.ps1"
-  },
   "reports": {
+    "model_file_info_post": "reports/model_file_info_post.txt",
+    "final_model_recovery": "reports/final_model_recovery.json",
+    "convert_conversion_retry": "reports/convert_conversion_retry_mapping.log",
+    "check_model_load_post": "reports/check_model_load_post.txt",
+    "check_model_load_output_post": "reports/check_model_load_output_post.json",
+    "space_estimate_json": "reports/space_estimate.json",
+    "space_estimate_text": "reports/space_estimate.txt",
+    "cleanup_dryrun": "reports/cleanup_dryrun.txt",
     "ci_summary": "reports/tests/ci_summary.txt",
     "junit": "reports/tests/junit.xml",
     "smoke_load": "reports/tests/smoke_load.json"
-  }
+  },
+  "space_estimate": {
+    "drives": [
+      {
+        "name": "C",
+        "root": "C:\\\\",
+        "free_bytes": 156157259776,
+        "total_bytes": 489322180608
+      }
+    ],
+    "paths": {
+      "models": {
+        "path": "models",
+        "size_bytes": 50727068881
+      },
+      "original_model": {
+        "path": "models\\\\gpt-oss-20b\\\\original",
+        "size_bytes": 13789188246
+      }
+    }
+  },
+  "scripts": {
+    "estimate_free_space": "scripts/estimate_free_space.ps1",
+    "archive_model": "scripts/archive_model.ps1",
+    "rotate_backups": "scripts/rotate_backups.ps1",
+    "cleanup_logs_powershell": "scripts/cleanup_logs.ps1",
+    "cleanup_logs_bash": "scripts/cleanup_logs.sh",
+    "free_space_dryrun": "scripts/free_space_dryrun.ps1",
+    "run_local_tests_sh": "scripts/run_local_tests.sh",
+    "run_local_tests_ps1": "scripts/run_local_tests.ps1"
+  },
+  "notes": "Cleanup utilities are non-destructive by default; archiving or deleting originals requires explicit confirmation during interactive runs. Added CI smoke, bench, and planner schema test artifacts."
 }

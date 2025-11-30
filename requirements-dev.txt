@@ -1,0 +1,5 @@
+# Base and test dependencies
+-r requirements.txt
+
+# Optional extras used in CI or remote planner integrations
+transformers>=4.35.0
