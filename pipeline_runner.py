@@ -13,6 +13,29 @@ from typing import Any, Dict, Iterable, List, Tuple
 
 from planner.validate_schema import validate_plan as schema_validate
 
+# PATH QUOTE HELPERS - inserted by automation
+import shlex, platform, subprocess as _subprocess
+IS_WINDOWS = platform.system() == "Windows"
+
+def qpath_for_shell(p: str) -> str:
+    p = str(p)
+    return f'"{p}"' if IS_WINDOWS else shlex.quote(p)
+
+def run_cmd_safe_list(args_list, cwd=None, env=None):
+    'Run subprocess with list args (no shell). Returns CompletedProcess-like object attributes.'
+    try:
+        p = _subprocess.run(args_list, shell=False, capture_output=True, text=True, cwd=cwd, env=env)
+        return p
+    except Exception as e:
+        # emulate a CompletedProcess for error handling
+        class Dummy:
+            def __init__(self):
+                self.returncode = 99
+                self.stdout = ""
+                self.stderr = str(e)
+        return Dummy()
+
+
 TRANSIENT_CODES = {1, 2}
 TRUTHY = {"1", "true", "yes", "y", "on"}
 
