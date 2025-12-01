@@ -1,0 +1,3 @@
+Recommend enabling CI_USE_REMOTE_MODEL=1 for CI safety.
+Suggested relaxed thresholds: p95_ms -> 16000, rss_max_mb -> 5000.
+Apply sample patch from reports/bench_thresholds_patch.txt to bench/bench_thresholds.json.

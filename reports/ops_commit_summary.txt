@@ -1,0 +1,10 @@
+﻿branch: ops/fallback-q4k_20251201_064327
+commit: 9f9590b399da17c7fed5bb015556ef9515d87938
+smoke_tests: pre=0, post=0 (see reports/pytest_smoke_precommit.out and reports/pytest_smoke_postcommit.out)
+pr: reports/pr_instructions.txt
+BRANCH=ops/fallback-q4k_20251201_064327 COMMIT=9f9590b PR_OUT=PR_INSTRUCTIONS_SAVED reports/pr_instructions.txt
+RUNBOOK_FINAL COMMIT=147e206 FILES=RUNBOOK.md,RUNBOOK_FINAL.md
+NOTIFY COMMIT=9cc49af FILES=ops/notify_slack.ps1,reports/monitor_task_instructions.txt
+PACKAGER COMMIT=2e70bbe FILES=ops/packager/package_models.ps1,ops/packager/install_model.ps1
+QUANT_TASK COMMIT=92647dc FILE=reports/quant_tuning_TASK.md
+SECURITY_CHECKLIST COMMIT=b6cc4cc FILE=reports/security_audit_checklist.txt

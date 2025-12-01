@@ -1,0 +1,6 @@
+BRANCH=ops/fallback-q4k_20251201_064327
+COMMIT=b6cc4cc
+PR_OUT=PR_INSTRUCTIONS_SAVED reports/pr_instructions.txt
+WATCHDOG_STATUS=CMD_SAVED
+CI_OUT=CI_SKIPPED
+SMOKE_TEST=FAILED (see reports/pytest_smoke_postfinal.out; p95_ms exceeded threshold in tests/test_bench_thresholds.py)

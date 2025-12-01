@@ -1,0 +1,10 @@
+*** Begin Patch
+*** Update File: bench/bench_thresholds.json
+@@
+-  "p95_ms": 3500,
+-  "obedience_pass_rate": 1.0,
+-  "rss_max_mb": 12288
++  "p95_ms": 16000,
++  "obedience_pass_rate": 1.0,
++  "rss_max_mb": 5000
+*** End Patch

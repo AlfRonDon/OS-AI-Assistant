@@ -1,0 +1,6 @@
+No origin remote configured.
+To push, run: git remote add origin <GIT_REMOTE_URL>
+Then: git push -u origin 
+ops/fallback-q4k_20251201_064327
+Then: gh pr create --title 'ops: fallback to q4_K_M...' --body "$(sed -n '1,120p' ops/FALLBACK_README.md)" --base main --head 
+ops/fallback-q4k_20251201_064327
