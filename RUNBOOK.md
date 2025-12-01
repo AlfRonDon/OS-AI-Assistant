@@ -58,6 +58,9 @@ This system runs a local quantized gpt-oss-20b model (`.gguf`) with an optional 
     }
     ```
   - Override in CI or manually by setting `"force_variant"` to a value in the allowlist (e.g., `"q4_0"`) and re-running the script.
+
+## 9. Final Ops Snapshot
+- See `RUNBOOK_FINAL.md` (timestamped 20251201_171735) for the current active variant assumption, atomic swap commands, watchdog registration command, CI/bench threshold notes, quant-tuning task pointer, and monitoring notifier reference.
   - Paths used by the script:
     - Source variant: `$(pwd)/models/gpt-oss-20b-<variant>.gguf`
     - Active target: `$(pwd)/models/gpt-oss-20b.gguf`
