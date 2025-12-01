@@ -1,0 +1,6 @@
+{
+  "ram_low_gb": 4,
+  "ram_medium_gb": 8,
+  "preferred_variant": "q8_0",
+  "fallback_variant": "q4_0"
+}

@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+RESULTS_DIR="${ROOT}/quant_tuning/results"
+mkdir -p "${RESULTS_DIR}"
+
+VARIANTS=("q4_0" "q4_K_M" "q4_KV" "q8_0")
+TIMESTAMP="$(date +%Y%m%d_%H%M%S)"
+
+for variant in "${VARIANTS[@]}"; do
+  model_path="${ROOT}/models/gpt-oss-20b-${variant}.gguf"
+  if [[ ! -f "${model_path}" ]]; then
+    echo "Skipping ${variant}: ${model_path} missing"
+    continue
+  fi
+  out_path="${RESULTS_DIR}/${variant}_${TIMESTAMP}.json"
+  echo "Running bench for ${variant} -> ${out_path}"
+  python "${ROOT}/bench/benchmark_model.py" \
+    --model-path "${model_path}" \
+    --warmups 3 \
+    --runs 20 \
+    --batch-sizes 1 4 8 \
+    --output "${out_path}"
+done

@@ -1,0 +1,54 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      CI_USE_REMOTE_MODEL: ${{ secrets.CI_USE_REMOTE_MODEL }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Cache pip
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('requirements-dev.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-dev.txt
+
+      - name: Run smoke + planner schema tests
+        run: |
+          mkdir -p reports/tests
+          pytest -q tests/test_model_smoke.py tests/test_planner_schema.py --junitxml reports/tests/junit_smoke_schema.xml
+
+      - name: Run unit tests (non-bench)
+        run: |
+          pytest -q tests \
+            --ignore=tests/test_model_smoke.py \
+            --ignore=tests/test_planner_schema.py \
+            --ignore=tests/test_benchmark_smoke.py \
+            --ignore=tests/test_bench_thresholds.py
+
+      - name: Run bench smoke locally
+        if: env.CI_USE_REMOTE_MODEL != '1'
+        run: |
+          # Lightweight bench to produce results for thresholds; set CI_USE_REMOTE_MODEL=1 to skip on remote-only runs.
+          pytest -q tests/test_benchmark_smoke.py
+
+      - name: Check bench thresholds (skips if results missing)
+        run: |
+          pytest -q tests/test_bench_thresholds.py

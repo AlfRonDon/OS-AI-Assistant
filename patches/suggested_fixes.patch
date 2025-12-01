@@ -1,0 +1,17 @@
+diff --git a/RUNBOOK.md b/RUNBOOK.md
+index 4927ec7..37084fa 100644
+--- a/RUNBOOK.md
++++ b/RUNBOOK.md
+@@ -34,6 +34,11 @@ This system runs a local quantized gpt-oss-20b model (`.gguf`) with an optional
+   - `models/gpt-oss-20b-q4_K_M.gguf`
+   - `models/gpt-oss-20b-q8_0.gguf`
+ 
++### 2.3 Quantize and bench GPT_OSS model
++- Set the model path before running tools: `export GPT_OSS_MODEL_PATH=models/gpt-oss-20b.gguf` (bash) or `$env:GPT_OSS_MODEL_PATH="models/gpt-oss-20b.gguf"` (PowerShell).
++- Quantize when a tool is available: `convert-gguf --input "$env:GPT_OSS_MODEL_PATH" --output models/gpt-oss-20b-q.gguf --format q4_0` (or `python -m llama_cpp.quantize --input "$env:GPT_OSS_MODEL_PATH" --output models/gpt-oss-20b-q.gguf --format q4_0`).
++- Rerun the bench against the chosen file: `python bench/benchmark_model.py --model-path models/gpt-oss-20b-q.gguf --warmups 3 --runs 10` and confirm `bench/bench_results.json` reports nonzero `peak_rss`.
++
+ ## 3. Swapping Active Model (Autoselect)
+ - To automatically pick the quantized variant based on free RAM and swap the active `gpt-oss-20b.gguf`:
+   - `pwsh -File .\scripts\autoselect_quant_variant.ps1`
+

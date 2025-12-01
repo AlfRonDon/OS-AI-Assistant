@@ -1,0 +1,7 @@
+{
+  "threshold_mb": 14000,
+  "process_name": "edge_model_runner",
+  "start_command": "",
+  "poll_seconds": 30,
+  "log_path": "reports/watchdog_daemon.log"
+}

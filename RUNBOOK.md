@@ -1,0 +1,222 @@
+# RUNBOOK - Edge OS Local LLM (gpt-oss-20b)
+
+## 1. Overview
+This system runs a local quantized gpt-oss-20b model (`.gguf`) with an optional remote planner fallback. The active model file is `models/gpt-oss-20b.gguf`, which is a copy of one of the quantized variants (q4_0, q4_K_M, q8_0).
+
+## 2. Converting & Quantizing
+### 2.1 Convert HF safetensors to GGUF
+- Source: `models/gpt-oss-20b/original/model.safetensors`
+- Converter: `scripts/convert_hf_to_gguf.py` (patched for `GptOssForCausalLM`).
+- Basic flow:
+  1. Validate safetensors:
+     ```bash
+     python - << 'EOF'
+     from safetensors import safe_open
+     path = "models/gpt-oss-20b/original/model.safetensors"
+     with safe_open(path, framework="pt") as f:
+         print("keys:", len(list(f.keys())))
+     EOF
+     ```
+  2. Run converter (example, adjust args as needed):
+     ```bash
+     python scripts/convert_hf_to_gguf.py \
+         --model-dir models/gpt-oss-20b/original \
+         --outfile models/gpt-oss-20b-f32.gguf
+     ```
+
+### 2.2 Quantize to q4_0 / q4_K_M / q8_0
+- Use existing helper scripts (examples):
+  - `bash scripts/run_quantize.sh models/gpt-oss-20b-f32.gguf q4_0`
+  - `bash scripts/run_quantize.sh models/gpt-oss-20b-f32.gguf q4_K_M`
+  - `bash scripts/run_quantize.sh models/gpt-oss-20b-f32.gguf q8_0`
+- Outputs (expected):
+  - `models/gpt-oss-20b-q4_0.gguf`
+  - `models/gpt-oss-20b-q4_K_M.gguf`
+  - `models/gpt-oss-20b-q8_0.gguf`
+
+### 2.3 Quantize and bench GPT_OSS model
+- Set the model path before running tools: `export GPT_OSS_MODEL_PATH=models/gpt-oss-20b.gguf` (bash) or `$env:GPT_OSS_MODEL_PATH="models/gpt-oss-20b.gguf"` (PowerShell).
+- Quantize when a tool is available: `convert-gguf --input "$env:GPT_OSS_MODEL_PATH" --output models/gpt-oss-20b-q.gguf --format q4_0` (or `python -m llama_cpp.quantize --input "$env:GPT_OSS_MODEL_PATH" --output models/gpt-oss-20b-q.gguf --format q4_0`).
+- Rerun the bench against the chosen file: `python bench/benchmark_model.py --model-path models/gpt-oss-20b-q.gguf --warmups 3 --runs 10` and confirm `bench/bench_results.json` reports nonzero `peak_rss`.
+
+## 3. Swapping Active Model (Autoselect)
+- To automatically pick the quantized variant based on free RAM and swap the active `gpt-oss-20b.gguf`:
+  - `pwsh -File .\scripts\autoselect_quant_variant.ps1`
+  - Use `-DryRun` or `AUTOSELECT_DRY_RUN=1` for CI so no files are copied (decision still logged).
+- Policy file: `config/autoselect_policy.json` (logged decisions land in `reports/autoselect.log`).
+  - Example (matches defaults in repo):
+    ```json
+    {
+      "_generated_by": "codex-agent auto-generated 2025-12-01T00:27:00Z",
+      "allowlist": ["q4_0", "q4_K_M", "q8_0"],
+      "force_variant": null,
+      "rules": [
+        {"condition": {"freeGB_lt": 4}, "variant": "q4_K_M", "reason": "Free memory below 4GB; favor smaller quantization"},
+        {"condition": {"freeGB_gte": 4}, "variant": "q8_0", "reason": "Adequate memory available; prefer higher quality quantization"}
+      ],
+      "fallback": {"variant": "q4_0", "reason": "Emergency fallback when no rules match or variants missing"}
+    }
+    ```
+  - Override in CI or manually by setting `"force_variant"` to a value in the allowlist (e.g., `"q4_0"`) and re-running the script.
+
+## 9. Final Ops Snapshot
+- See `RUNBOOK_FINAL.md` (timestamped 20251201_171735) for the current active variant assumption, atomic swap commands, watchdog registration command, CI/bench threshold notes, quant-tuning task pointer, and monitoring notifier reference.
+  - Paths used by the script:
+    - Source variant: `$(pwd)/models/gpt-oss-20b-<variant>.gguf`
+    - Active target: `$(pwd)/models/gpt-oss-20b.gguf`
+    - Backup: `$(pwd)/models/backups/gpt-oss-20b.gguf.bak.<timestamp>`
+- The script:
+  - Backs up the previous `models/gpt-oss-20b.gguf` into `models/backups/`.
+  - Copies the chosen variant to `models/gpt-oss-20b.gguf`.
+  - Logs `{timestamp, freeGB, chosen_variant, reason, backup_path}` to `reports/autoselect.log`.
+
+## 4. Watchdog (Memory / Liveness)
+- Script: `scripts/watchdog_service_wrapper.ps1`
+- Behavior:
+  - Checks process named `edge_model_runner` (configure `$processName` to your actual runner).
+  - Logs RSS and actions to `reports/watchdog.log`.
+  - If RSS exceeds threshold (default 14 GB), stops the process and restarts it using `$startCommand`.
+
+### 4.1 Installing as a Scheduled Task (run on the Windows host)
+- Run in an elevated PowerShell on the target machine (adjust paths):
+  ```powershell
+  $script = "C:\path\to\repo\scripts\watchdog_service_wrapper.ps1"
+  $action = New-ScheduledTaskAction -Execute 'PowerShell.exe' -Argument "-NoProfile -WindowStyle Hidden -File `"$script`""
+  $trigger = New-ScheduledTaskTrigger -Once -At (Get-Date) -RepetitionInterval (New-TimeSpan -Minutes 1) -RepetitionDuration ([TimeSpan]::MaxValue)
+  Register-ScheduledTask -TaskName "EdgeOSWatchdog" -Action $action -Trigger $trigger -RunLevel Highest -Force
+  ```
+- Check logs:
+  - `Get-Content C:\path\to\repo\reports\watchdog.log -Tail 50`
+
+### 4.2 Linux systemd template (service not installed by default)
+- Template: `deploy/edgeos-watchdog.service.template`
+- Render & enable (replace into `/etc/systemd/system/edgeos-watchdog.service`):
+  ```bash
+  REPO=$(pwd)
+  sudo env REPO="$REPO" envsubst < deploy/edgeos-watchdog.service.template | sudo tee /etc/systemd/system/edgeos-watchdog.service
+  sudo systemctl daemon-reload
+  sudo systemctl enable edgeos-watchdog.service
+  sudo systemctl start edgeos-watchdog.service
+  ```
+- Logs & status:
+  - `sudo systemctl status edgeos-watchdog.service`
+  - `tail -n 50 $REPO/reports/watchdog_daemon.log`
+
+### 4.3 Windows service via ScheduledTask or NSSM wrapper
+- Minimal Scheduled Task (no elevation to run here, but use elevated PowerShell on host):
+  ```powershell
+  $repo = (Get-Location).Path
+  $py = (Get-Command python).Source
+  $script = Join-Path $repo "services/watchdog_daemon.py"
+  $cfg = Join-Path $repo "config/watchdog_config.json"
+  $args = "-NoProfile -WindowStyle Hidden -Command `"$py `"$script`" --config `"$cfg`"`""
+  $action = New-ScheduledTaskAction -Execute 'PowerShell.exe' -Argument $args
+  $trigger = New-ScheduledTaskTrigger -Once -At (Get-Date) -RepetitionInterval (New-TimeSpan -Minutes 1) -RepetitionDuration ([TimeSpan]::MaxValue)
+  Register-ScheduledTask -TaskName "EdgeOSWatchdog" -Action $action -Trigger $trigger -RunLevel Highest -Force
+  ```
+- NSSM recommendation (run in admin PowerShell on Windows host):
+  ```powershell
+  $repo = (Get-Location).Path
+  nssm install EdgeOSWatchdog "python.exe" "$repo\\services\\watchdog_daemon.py"
+  nssm set EdgeOSWatchdog AppParameters "--config `"$repo\\config\\watchdog_config.json`""
+  nssm set EdgeOSWatchdog AppStdout "$repo\\reports\\watchdog_daemon.log"
+  nssm set EdgeOSWatchdog AppStderr "$repo\\reports\\watchdog_daemon.log"
+  nssm start EdgeOSWatchdog
+  ```
+
+## 5. Archiving Original Safetensors
+- To archive original HF safetensors and verify integrity:
+  ```powershell
+  pwsh -File .\scripts\archive_safetensors.ps1 `
+      -SourcePath ".\models\gpt-oss-20b\original\model.safetensors" `
+      -DestinationPath "D:\model_archives\gpt-oss-20b\model.safetensors"
+  ```
+- The script:
+  - Creates destination directories if needed.
+  - Copies the file.
+  - Computes SHA256 for source and destination.
+  - Writes a report to `reports/archive_safetensors_*.txt`.
+
+## 6. Benchmarks & Thresholds
+- Bench results JSON files live under `bench/bench_results_*.json`.
+- Editable thresholds: `bench/bench_thresholds.json`:
+  - `p95_ms` - max allowed 95th percentile latency (ms).
+  - `rss_max_mb` - max allowed RSS (MB).
+  - `obedience_pass_rate` - minimum acceptable obedience score.
+- The test `tests/test_bench_thresholds.py`:
+  - Loads latest `bench/bench_results_*.json`.
+  - Applies thresholds from `bench/bench_thresholds.json`.
+  - Skips entirely if `CI_USE_REMOTE_MODEL=1`.
+
+## 7. CI Behavior
+- Main points:
+  - Always run:
+    - `tests/test_model_smoke.py`
+    - `tests/test_planner_schema.py`
+  - Optionally run:
+    - `tests/test_bench_thresholds.py` (requires recent bench results file)
+- To use a remote model in CI and skip heavy local bench:
+  - Set environment variable `CI_USE_REMOTE_MODEL=1` in the CI job.
+
+## 8. Recovery
+- To restore latest backup of the active GGUF:
+  ```powershell
+  $bak = Get-ChildItem .\models\backups\gpt-oss-20b.gguf.bak.* | Sort-Object LastWriteTime -Desc | Select-Object -First 1
+  Copy-Item $bak.FullName ".\models\gpt-oss-20b.gguf" -Force
+  ```
+- Verify load:
+  - `python scripts/check_model_load.py`
+
+## Additional Troubleshooting & Maintenance
+### Planner outputs invalid JSON
+- Check `reports/obedience_report.json` for recent failures.
+- Re-run the specific prompt with extra debugging enabled (`python scripts/run_obedience_pack.py` or a focused harness) to reproduce.
+- Inspect `planner/runner.log` or local console logs to see validation errors.
+- If schema mismatch appears, add or adjust retrieval snippets or tighten the prompt until validation passes.
+- To roll back a bad change quickly, use `git revert` on the offending commit.
+
+### Model OOM
+- Review `bench/bench_results.json` to confirm memory spikes.
+- Reduce batch size or sequence length in the calling code and retry.
+- Enable quantization and verify with `scripts/quantize_and_validate.sh`.
+- If local hardware remains constrained, push workloads to a server fallback path.
+
+### Quantize and bench GPT_OSS model
+- Set the model path before running tools: `export GPT_OSS_MODEL_PATH=models/gpt-oss-20b.gguf` (bash) or `$env:GPT_OSS_MODEL_PATH="models/gpt-oss-20b.gguf"` (PowerShell).
+- Quantize when a tool is available: `convert-gguf --input "$env:GPT_OSS_MODEL_PATH" --output models/gpt-oss-20b-q.gguf --format q4_0` (or `python -m llama_cpp.quantize --input "$env:GPT_OSS_MODEL_PATH" --output models/gpt-oss-20b-q.gguf --format q4_0`).
+- Rerun the bench against the chosen file: `python bench/benchmark_model.py --model-path models/gpt-oss-20b-q.gguf --warmups 3 --runs 10` and confirm `bench/bench_results.json` reports nonzero `peak_rss`.
+
+### FAISS corruption
+- Rebuild the index from `retrieval/corpus/` using the standard indexing pipeline.
+- Restore embeddings/payloads from `replays/pgvector_fallback.json` if Postgres is unavailable.
+- Re-run indexing and a small search smoke test to confirm results.
+
+### Wrong execute
+- Abort the run immediately and avoid further state changes.
+- Run `mock_os/undo` to restore the last checkpointed state.
+- Check `telemetry/events.log` to find the planner output hash that led to the bad action.
+- Restore the corresponding state snapshot if needed, and open an issue with details for follow-up.
+
+### Model storage & cleanup
+- Point archives to an external path with plenty of free space (e.g., `D:\model_archives\`); avoid filling the system drive.
+- Copy and verify the original safetensors with `scripts/archive_model.ps1`; choose the symlink option to replace `models/gpt-oss-20b/original/model.safetensors` with a link pointing at the archived copy when you want the local footprint minimized.
+- Manual symlink fallback: remove or move the original file, then run `New-Item -ItemType SymbolicLink -Path models/gpt-oss-20b/original/model.safetensors -Target <archived-path>`.
+- Keep only the newest 3 backups in `models/backups/` using `scripts/rotate_backups.ps1` (double confirmation required before deletion).
+- Compress routine logs with `scripts/cleanup_logs.ps1` (or `.sh` in WSL); archives land in `logs/archive/` and raw logs older than 90 days are cleared.
+- Checklist: run `scripts/estimate_free_space.ps1`, pick an archive destination, run `scripts/free_space_dryrun.ps1`, archive the model, rotate backups, clean logs, and rerun the estimate to confirm reclaimed space.
+
+## Quick Checklist (handoff)
+- Archive safetensors and verify hash
+- Autoselect policy in place (`config/autoselect_policy.json`) and logged once
+- RUNBOOK.md updated and copied to ops share
+- Watchdog service template rendered (Linux) or ScheduledTask/NSSM registered (Windows)
+- CI change staged (`tests/test_bench_thresholds.py` + thresholds) and patch exported
+- Quantize tuning plan/scripts dropped into `quant_tuning/` and scheduled on 32GB+ host
+
+## Operational note: temporary fallback to q4_K_M
+
+* Active variant: q4_K_M (temporary).
+* Reason: q8_0 produced unstable p95 on constrained hardware.
+* Revert instructions (manual): atomic move of preferred GGUF into models/gpt-oss-20b.gguf, then run scripts/check_model_load.py.
+* CI: recommend setting CI_USE_REMOTE_MODEL=1 for CI runs on limited runners, and making bench thresholds explicit in bench/bench_thresholds.json.
+

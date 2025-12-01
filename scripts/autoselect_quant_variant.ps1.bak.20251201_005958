@@ -1,0 +1,89 @@
+$ErrorActionPreference = "Stop"
+
+# Autoselect quantized variant based on free physical memory with safe backup/copy.
+# - freeGB < 4  -> q4_K_M
+# - else        -> q8_0
+# Backs up existing active GGUF, prefers fast Move-Item on same drive, and falls back to robocopy.
+
+$os = Get-CimInstance Win32_OperatingSystem
+$freeGB = [math]::Round(($os.FreePhysicalMemory / 1024 / 1024), 2)
+
+if ($freeGB -lt 4) {
+    $variant = "q4_K_M"
+} else {
+    $variant = "q8_0"
+}
+
+$modelsDir = Join-Path (Get-Location) "models"
+$src = Join-Path $modelsDir "gpt-oss-20b-$variant.gguf"
+$dest = Join-Path $modelsDir "gpt-oss-20b.gguf"
+
+if (!(Test-Path $src)) {
+    throw "Source variant not found: $src"
+}
+
+$backupDir = Join-Path $modelsDir "backups"
+New-Item -ItemType Directory -Path $backupDir -Force | Out-Null
+
+$timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
+$backupPath = Join-Path $backupDir ("gpt-oss-20b.gguf.bak.$timestamp")
+$backupStatus = "none"
+
+if (Test-Path $dest) {
+    try {
+        Move-Item -Path $dest -Destination $backupPath -Force
+        $backupStatus = "moved"
+    } catch {
+        Copy-Item -Path $dest -Destination $backupPath -Force
+        $backupStatus = "copied"
+    }
+}
+
+$method = $null
+$moveErr = $null
+
+try {
+    Move-Item -Path $src -Destination $dest -Force
+    $method = "move"
+} catch {
+    $moveErr = $_.Exception.Message
+}
+
+if (-not $method) {
+    $tmpDir = Join-Path $modelsDir "_tmp_autoselect"
+    if (Test-Path $tmpDir) {
+        Remove-Item $tmpDir -Recurse -Force
+    }
+    New-Item -ItemType Directory -Path $tmpDir -Force | Out-Null
+
+    $srcName = Split-Path $src -Leaf
+    $rcCmd = "robocopy `"$((Split-Path $src -Parent))`" `"$tmpDir`" `"$srcName`" /MT:8 /R:3 /W:5 /NFL /NDL /NJH /NJS /NC /NS /NP"
+    $rcOutput = & cmd /c $rcCmd
+    $rcCode = $LASTEXITCODE
+    $copiedPath = Join-Path $tmpDir $srcName
+
+    if (($rcCode -le 1) -and (Test-Path $copiedPath)) {
+        Move-Item -Path $copiedPath -Destination $dest -Force
+        $method = "robocopy_$rcCode"
+    } else {
+        throw "Copy fallback failed (rc=$rcCode, moveErr=$moveErr): $rcOutput"
+    }
+
+    try {
+        Remove-Item $tmpDir -Recurse -Force
+    } catch {
+        # best effort cleanup
+    }
+}
+
+if (-not (Test-Path $src)) {
+    try {
+        cmd /c "mklink /H `"$src`" `"$dest`"" | Out-Null
+    } catch {
+        # optional; ignore if hardlink creation fails
+    }
+}
+
+Write-Host "Swapped to variant: $variant (freeGB=$freeGB)"
+Write-Host "Active model: $dest"
+Write-Host "Method: $method (backup=$backupStatus)"

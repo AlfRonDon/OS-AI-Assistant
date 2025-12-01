@@ -1,0 +1,38 @@
+# Python
+__pycache__/
+**/__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Environments
+.venv/
+env/
+venv/
+
+# IDE / Editor
+.vscode/
+.idea/
+.history/
+
+# Logs & reports
+logs/
+*.log
+*.out
+reports/
+
+# Models & large artifacts
+models/
+*.gguf
+*.safetensors
+*.bin
+*.pth
+*.pt
+*.ckpt
+
+# Temp & OS junk
+*.tmp
+*.bak
+*.orig
+.DS_Store
+Thumbs.db

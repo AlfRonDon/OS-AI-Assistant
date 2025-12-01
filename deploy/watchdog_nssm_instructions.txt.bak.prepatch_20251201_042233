@@ -1,0 +1,11 @@
+NSSM instructions for EdgeOS watchdog (Windows)
+1) Download nssm from https://nssm.cc/download
+2) Install service (run elevated):
+   nssm install EdgeOSWatchdogDaemon "C:\Path\To\python.exe" "C:\Path\To\repo\services\watchdog_daemon.py"
+   Set Startup directory to the repo root.
+3) Environment:
+   WATCHDOG_DRY_RUN=0
+4) Start service:
+   nssm start EdgeOSWatchdogDaemon
+5) Logs:
+   reports/watchdog_daemon.log

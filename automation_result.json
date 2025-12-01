@@ -1,0 +1,11 @@
+{
+  "status": "DONE",
+  "recommended": "q8_0",
+  "reports": {
+    "fileinfo": "reports/activate_q8_0_fileinfo.txt",
+    "smoke": "reports/activate_q8_0_smoke.txt",
+    "obedience": "reports/activate_q8_0_obedience_summary.json",
+    "bench": "bench/bench_results_q8_0_active.json",
+    "summary": "reports/activate_q8_0_summary.json"
+  }
+}

@@ -1,0 +1,58 @@
+import csv
+import glob
+import json
+from pathlib import Path
+from typing import Any, Dict, Iterable, List
+
+RESULTS_DIR = Path(__file__).resolve().parent / "results"
+OUTPUT_CSV = RESULTS_DIR / "summary.csv"
+
+
+def _iter_results() -> Iterable[Path]:
+    RESULTS_DIR.mkdir(parents=True, exist_ok=True)
+    for path in RESULTS_DIR.glob("*.json"):
+        yield path
+
+
+def _flatten(path: Path) -> Dict[str, Any]:
+    with path.open("r", encoding="utf-8") as fh:
+        data = json.load(fh)
+    flat = {
+        "file": path.name,
+        "variant": data.get("variant") or path.stem.split("_")[0],
+        "p95_ms": data.get("p95_ms") or data.get("latency_p95_ms"),
+        "peak_rss_mb": data.get("peak_rss_mb") or (data.get("peak_rss") and data["peak_rss"] / (1024 * 1024)),
+        "load_time_s": data.get("load_time_s"),
+        "obedience_pass_rate": data.get("obedience_pass_rate"),
+        "throughput_tps": data.get("throughput_tps"),
+    }
+    return flat
+
+
+def collect() -> List[Dict[str, Any]]:
+    rows = []
+    for path in _iter_results():
+        rows.append(_flatten(path))
+    return rows
+
+
+def write_csv(rows: List[Dict[str, Any]]) -> None:
+    if not rows:
+        return
+    OUTPUT_CSV.parent.mkdir(parents=True, exist_ok=True)
+    keys = ["file", "variant", "p95_ms", "peak_rss_mb", "load_time_s", "obedience_pass_rate", "throughput_tps"]
+    with OUTPUT_CSV.open("w", newline="", encoding="utf-8") as fh:
+        writer = csv.DictWriter(fh, fieldnames=keys)
+        writer.writeheader()
+        for row in rows:
+            writer.writerow(row)
+
+
+def main() -> int:
+    rows = collect()
+    write_csv(rows)
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

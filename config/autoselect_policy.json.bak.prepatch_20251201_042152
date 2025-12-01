@@ -1,0 +1,11 @@
+{
+  "_generated_by": "codex-agent auto-generated 2025-12-01T01:04:00Z",
+  "variants": ["q8_0", "q4_K_M", "q4_0"],
+  "rules": [
+    {"min_free_gb": 4, "variant": "q8_0", "reason": "preferred"},
+    {"min_free_gb": 0, "variant": "q4_K_M", "reason": "low-memory"},
+    {"min_free_gb": -1, "variant": "q4_0", "reason": "emergency-fallback"}
+  ],
+  "force_variant": null
+}
+

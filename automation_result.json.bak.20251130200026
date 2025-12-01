@@ -1,0 +1,15 @@
+{
+  "timestamp": "2025-11-30T13:26:17.727773Z",
+  "status": "UPDATED",
+  "reports": {
+    "remote_adapter_log": "reports/remote_adapter.log",
+    "remote_adapter_test": "reports/remote_adapter_test.txt",
+    "remote_planner_test": "reports/remote_planner_test.json"
+  },
+  "tests": {
+    "pytest": [
+      "tests/test_runner_remote_toggle.py"
+    ]
+  },
+  "smoke_test": "Skipped remote adapter smoke test: USE_REMOTE_MODEL!=1, OPENAI_API_KEY missing."
+}

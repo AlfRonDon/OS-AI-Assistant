@@ -1,0 +1,11 @@
+# Quantization Tuning Plan
+
+Target: 32GB+ RAM hosts running GPT-OSS 20B.
+
+Variants: q4_0, q4_K_M, q4_KV, q8_0.
+
+Metrics: p50, p95, peak_rss, load_time, obedience, throughput.
+
+Runs: warmups=3, runs=20, batches=[1,4,8].
+
+Outputs are written to `quant_tuning/results/<variant>_<timestamp>.json` using `quant_tuning/run_quant_bench.sh`.

@@ -1,0 +1,6 @@
+[
+  {"id": "btn-settings", "role": "button", "label": "Settings"},
+  {"id": "btn-clipboard", "role": "button", "label": "Clipboard"},
+  {"id": "lst-windows", "role": "list", "label": "Windows"},
+  {"id": "log-panel", "role": "log", "label": "Activity Log"}
+]

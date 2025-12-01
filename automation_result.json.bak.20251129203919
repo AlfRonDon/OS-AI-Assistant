@@ -1,0 +1,13 @@
+﻿{
+    "status":  "DONE",
+    "failed_step":  null,
+    "reports":  {
+                    "recovery_context":  "reports/recovery_context.txt",
+                    "gguf_scan":  "reports/gguf_scan_full.txt",
+                    "model_file_info":  "reports/model_file_info.txt",
+                    "check_model_load_pre":  "reports/check_model_load.txt",
+                    "check_model_load_pre_json":  "reports/check_model_load_output.json",
+                    "final_recovery":  "reports/final_model_recovery.json"
+                },
+    "timestamp":  "2025-11-29T20:30:24.2157695+05:30"
+}

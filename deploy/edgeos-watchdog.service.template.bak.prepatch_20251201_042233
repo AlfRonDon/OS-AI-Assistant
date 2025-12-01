@@ -1,0 +1,13 @@
+[Unit]
+Description=EdgeOS Watchdog Daemon
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/path/to/repo
+ExecStart=/usr/bin/python /path/to/repo/services/watchdog_daemon.py
+Restart=always
+Environment=WATCHDOG_DRY_RUN=0
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,142 @@
+diff --git a/bench/bench_thresholds.json b/bench/bench_thresholds.json
+new file mode 100644
+index 0000000..dc05ed8
+--- /dev/null
++++ b/bench/bench_thresholds.json
+@@ -0,0 +1,5 @@
++{
++  "p95_ms": 3500,
++  "obedience_pass_rate": 1.0,
++  "rss_max_mb": 12288
++}
+diff --git a/tests/test_bench_thresholds.py b/tests/test_bench_thresholds.py
+index d1dadc2..ecb7930 100644
+--- a/tests/test_bench_thresholds.py
++++ b/tests/test_bench_thresholds.py
+@@ -1,37 +1,96 @@
++import glob
+ import json
+-import warnings
+-from pathlib import Path
++import os
+ 
+ import pytest
+ 
++THRESHOLDS_PATH = os.path.join("bench", "bench_thresholds.json")
++RESULTS_PATTERN = os.path.join("bench", "bench_results_*.json")
+ 
+-def _load_results() -> dict:
+-    path = Path(__file__).resolve().parents[1] / "bench" / "bench_results.json"
+-    if not path.exists():
+-        pytest.skip("bench/bench_results.json missing; run benchmark_model.py first.")
++
++def _using_remote_model():
++    value = os.getenv("CI_USE_REMOTE_MODEL", "0").lower()
++    return value in {"1", "true", "yes"}
++
++
++def _load_thresholds():
++    if not os.path.exists(THRESHOLDS_PATH):
++        pytest.skip(f"Bench thresholds file missing: {THRESHOLDS_PATH}")
++    with open(THRESHOLDS_PATH, "r", encoding="utf-8") as f:
++        return json.load(f)
++
++
++def _find_latest_bench_result():
++    files = glob.glob(RESULTS_PATTERN)
++    if not files:
++        pytest.skip("No bench results files found in bench/bench_results_*.json")
++    files.sort(key=os.path.getmtime, reverse=True)
++    return files[0]
++
++
++def _load_bench_result(path):
+     with open(path, "r", encoding="utf-8") as f:
+         return json.load(f)
+ 
+ 
+-def test_bench_thresholds_reasonable():
+-    results = _load_results()
+-    latencies = results.get("latencies_ms", {})
+-    p95_ms = float(latencies.get("p95", 0))
+-    peak_rss = float(results.get("peak_rss", 0))
+-    peak_rss_mb = peak_rss / (1024 * 1024)
+-
+-    # Memory budget: warn after 20GB, fail only if clearly unreasonable.
+-    if peak_rss_mb >= 20000:
+-        with pytest.warns(UserWarning, match="peak_rss"):
+-            warnings.warn(f"peak_rss {peak_rss_mb:.1f}MB exceeds 20GB target", UserWarning)
+-        assert peak_rss_mb < 40000
+-    else:
+-        assert peak_rss_mb < 20000
+-
+-    # Latency budget: target sub-2s, warn if slower, fail only if wildly high.
+-    if p95_ms >= 2000:
+-        with pytest.warns(UserWarning, match="p95"):
+-            warnings.warn(f"p95 latency {p95_ms:.1f}ms above target", UserWarning)
+-        assert p95_ms < 5000
+-    else:
+-        assert p95_ms < 2000
++def _extract_p95_ms(data: dict):
++    p95_candidates = [
++        data.get("p95_ms"),
++        data.get("latency_p95_ms"),
++        data.get("tokens_p95_ms"),
++    ]
++    for key in ("latencies_ms", "latency_ms", "latencies"):
++        nested = data.get(key, {})
++        if isinstance(nested, dict):
++            p95_candidates.append(nested.get("p95"))
++            p95_candidates.append(nested.get("latency_p95_ms"))
++    for value in p95_candidates:
++        if value is not None:
++            return float(value)
++    return None
++
++
++def _extract_rss_mb(data: dict):
++    rss_candidates = [
++        data.get("rss_mb"),
++        data.get("max_rss_mb"),
++        data.get("rss_peak_mb"),
++    ]
++    for value in rss_candidates:
++        if value is not None:
++            return float(value)
++    peak_rss_bytes = data.get("peak_rss") or data.get("rss_bytes")
++    if peak_rss_bytes is not None:
++        return float(peak_rss_bytes) / (1024 * 1024)
++    return None
++
++
++def _extract_obedience(data: dict):
++    if "obedience_pass_rate" in data:
++        return float(data["obedience_pass_rate"])
++    obedience = data.get("obedience")
++    if isinstance(obedience, dict) and "pass_rate" in obedience:
++        return float(obedience["pass_rate"])
++    return None
++
++
++@pytest.mark.skipif(
++    _using_remote_model(),
++    reason="Using remote model in CI; skipping local bench thresholds.",
++)
++def test_bench_thresholds():
++    thresholds = _load_thresholds()
++    bench_path = _find_latest_bench_result()
++    data = _load_bench_result(bench_path)
++
++    p95 = _extract_p95_ms(data)
++    assert p95 is not None, "Bench results must contain a p95 metric"
++    assert p95 <= thresholds["p95_ms"], f"p95_ms={p95} > {thresholds['p95_ms']}"
++
++    rss_mb = _extract_rss_mb(data)
++    if rss_mb is not None:
++        assert rss_mb <= thresholds["rss_max_mb"], f"rss_mb={rss_mb} > {thresholds['rss_max_mb']}"
++
++    obedience = _extract_obedience(data)
++    if obedience is not None:
++        assert obedience >= thresholds["obedience_pass_rate"], f"obedience_pass_rate={obedience} < {thresholds['obedience_pass_rate']}"
+
+

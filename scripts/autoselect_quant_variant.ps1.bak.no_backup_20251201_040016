@@ -1,0 +1,77 @@
+﻿# Auto-generated robust autoselect script (2025-12-01T01:18:00Z)
+[CmdletBinding()]
+param(
+    [switch]$DryRun
+)
+
+$repoRoot = Get-Location
+$reportsDir = Join-Path $repoRoot 'reports'
+$logPath = Join-Path $reportsDir 'autoselect.log'
+if (-not (Test-Path $reportsDir)) { New-Item -ItemType Directory -Path $reportsDir -Force | Out-Null }
+
+function Write-Autolog {
+    param([string]$Message)
+    $ts = Get-Date -Format 'yyyy-MM-ddTHH:mm:ssK'
+    Add-Content -Path $logPath -Value "$ts`t$Message"
+}
+
+try {
+    $os = Get-CimInstance Win32_OperatingSystem
+    $freeGB = [math]::Round(($os.FreePhysicalMemory / 1024 / 1024), 2)
+} catch {
+    Write-Error "Failed to read free memory: $($_.Exception.Message)"; exit 1
+}
+
+$chosenVariant = if ($freeGB -lt 4) { 'q4_K_M' } else { 'q8_0' }
+$modelsDir = Join-Path $repoRoot 'models'
+$src = Join-Path $modelsDir "gpt-oss-20b-$chosenVariant.gguf"
+$dest = Join-Path $modelsDir 'gpt-oss-20b.gguf'
+$backupDir = Join-Path $modelsDir 'backups'
+New-Item -ItemType Directory -Path $backupDir -Force | Out-Null
+
+if (-not (Test-Path $src)) {
+    Write-Autolog "variant_missing variant=$chosenVariant freeGB=$freeGB src=$src"
+    Write-Error "Source variant not found: $src"; exit 1
+}
+
+$timestamp = Get-Date -Format 'yyyyMMdd_HHmmss'
+if (Test-Path $dest -and -not $DryRun) {
+    $backup = Join-Path $backupDir "gpt-oss-20b.gguf.bak.$timestamp"
+    try { Move-Item -Path $dest -Destination $backup -Force -ErrorAction Stop; Write-Autolog "backup_move dest->$backup" }
+    catch { Copy-Item -Path $dest -Destination $backup -Force; Write-Autolog "backup_copy dest->$backup" }
+}
+
+$success = $false
+if (-not $DryRun) {
+    try {
+        Move-Item -Path $src -Destination $dest -Force -ErrorAction Stop
+        $success = $true
+        Write-Autolog "move_success src=$src dest=$dest"
+    } catch {
+        $srcDir = Split-Path $src -Parent
+        $file = Split-Path $src -Leaf
+        $tmpDir = Join-Path $modelsDir '_tmp_autoselect_copy'
+        New-Item -ItemType Directory -Path $tmpDir -Force | Out-Null
+        robocopy "$srcDir" "$tmpDir" "$file" /MT:8 /R:3 /W:5 | Out-Null
+        if ($LASTEXITCODE -le 7) {
+            try {
+                Move-Item -Path (Join-Path $tmpDir $file) -Destination $dest -Force -ErrorAction Stop
+                $success = $true
+                Write-Autolog "robocopy_success src=$src dest=$dest tmp=$tmpDir"
+            } catch {
+                Write-Autolog "robocopy_move_failed err=$($_.Exception.Message)"
+            }
+        } else {
+            Write-Autolog "robocopy_failed code=$LASTEXITCODE"
+        }
+        Remove-Item -Path $tmpDir -Recurse -Force -ErrorAction SilentlyContinue
+    }
+} else {
+    Write-Autolog "dry_run variant=$chosenVariant freeGB=$freeGB dest=$dest"
+}
+
+if (-not $success -and -not $DryRun) { Write-Error "Failed to swap to $chosenVariant"; exit 1 }
+
+Write-Output "Swapped to variant: $chosenVariant (freeGB=$freeGB)" -NoNewline:$false
+Write-Output "Active model: $dest" -NoNewline:$false
+Write-Autolog "result variant=$chosenVariant freeGB=$freeGB success=$success dry_run=$DryRun dest=$dest"

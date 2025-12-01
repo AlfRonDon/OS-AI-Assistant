@@ -1,0 +1,125 @@
+"""
+Simple cross-platform watchdog daemon.
+
+- Reads config/watchdog_config.json for thresholds and commands.
+- Polls process RSS by name; on breach, writes a restart marker and optionally starts the command.
+- Supports --dry-run (or WATCHDOG_DRY_RUN=1) to avoid stop/start.
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import subprocess
+import time
+from pathlib import Path
+from typing import Any, Dict, Optional
+
+try:
+    import psutil
+except Exception:  # pragma: no cover - optional dependency
+    psutil = None
+
+
+DEFAULT_CONFIG = {
+    "threshold_mb": 14000,
+    "process_name": "edge_model_runner",
+    "start_command": "",
+    "poll_seconds": 30,
+    "log_path": "reports/watchdog_daemon.log",
+}
+
+CONFIG_PATH = Path("config") / "watchdog_config.json"
+MARKER_PATH = Path("reports") / "watchdog_restart.marker"
+
+
+def load_config(path: Path) -> Dict[str, Any]:
+    if not path.exists():
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps(DEFAULT_CONFIG, indent=2), encoding="utf-8")
+    with path.open("r", encoding="utf-8") as fh:
+        data = json.load(fh)
+    merged = DEFAULT_CONFIG.copy()
+    merged.update(data or {})
+    return merged
+
+
+def log_message(log_path: Path, message: str) -> None:
+    log_path.parent.mkdir(parents=True, exist_ok=True)
+    timestamp = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+    with log_path.open("a", encoding="utf-8") as fh:
+        fh.write(f"{timestamp}\t{message}\n")
+
+
+def find_process(name: str) -> Optional["psutil.Process"]:
+    if psutil is None:
+        return None
+    for proc in psutil.process_iter(["name"]):
+        if proc.info.get("name") and proc.info["name"].lower() == name.lower():
+            return proc
+    return None
+
+
+def check_and_maybe_restart(cfg: Dict[str, Any], dry_run: bool = False) -> None:
+    proc_name = cfg["process_name"]
+    start_cmd = cfg.get("start_command") or ""
+    threshold_mb = float(cfg.get("threshold_mb", DEFAULT_CONFIG["threshold_mb"]))
+    log_path = Path(cfg.get("log_path", DEFAULT_CONFIG["log_path"]))
+
+    proc = find_process(proc_name)
+    if proc is None:
+        log_message(log_path, f"process {proc_name} not running; start_command={start_cmd or 'NONE'}")
+        if start_cmd and not dry_run:
+            try:
+                subprocess.Popen(start_cmd, shell=True)
+                log_message(log_path, "start_command invoked")
+            except Exception as exc:  # pragma: no cover - best effort
+                log_message(log_path, f"error starting process: {exc}")
+        return
+
+    try:
+        rss_mb = proc.memory_info().rss / (1024 * 1024)
+    except Exception as exc:  # pragma: no cover - process died or permission issue
+        log_message(log_path, f"error reading RSS for {proc_name}: {exc}")
+        return
+
+    log_message(log_path, f"process {proc_name} rss_mb={rss_mb:.2f} threshold_mb={threshold_mb}")
+    if rss_mb > threshold_mb:
+        MARKER_PATH.parent.mkdir(parents=True, exist_ok=True)
+        MARKER_PATH.write_text(f"{time.time()}\t{rss_mb}\n", encoding="utf-8")
+        log_message(log_path, f"threshold breached; dry_run={dry_run}; would restart")
+        if not dry_run and start_cmd:
+            try:
+                subprocess.Popen(start_cmd, shell=True)
+                log_message(log_path, "start_command invoked after breach")
+            except Exception as exc:  # pragma: no cover
+                log_message(log_path, f"error invoking start_command: {exc}")
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description="EdgeOS watchdog daemon")
+    parser.add_argument("--config", type=Path, default=CONFIG_PATH, help="Path to config JSON")
+    parser.add_argument("--dry-run", action="store_true", help="Do not start processes; log only")
+    args = parser.parse_args()
+
+    dry_run = args.dry_run or (str(Path.cwd().joinpath("").anchor) and (str(__import__("os").environ.get("WATCHDOG_DRY_RUN", "")).lower() in {"1", "true", "yes"}))
+    cfg = load_config(args.config)
+
+    poll_seconds = int(cfg.get("poll_seconds", DEFAULT_CONFIG["poll_seconds"]))
+    log_path = Path(cfg.get("log_path", DEFAULT_CONFIG["log_path"]))
+    log_message(log_path, f"watchdog starting dry_run={dry_run} poll_seconds={poll_seconds}")
+
+    try:
+        while True:
+            check_and_maybe_restart(cfg, dry_run=dry_run)
+            time.sleep(max(1, poll_seconds))
+    except KeyboardInterrupt:
+        log_message(log_path, "watchdog stopped via keyboard interrupt")
+        return 0
+    except Exception as exc:  # pragma: no cover - best effort
+        log_message(log_path, f"watchdog encountered error: {exc}")
+        return 1
+
+
+if __name__ == "__main__":  # pragma: no cover
+    raise SystemExit(main())

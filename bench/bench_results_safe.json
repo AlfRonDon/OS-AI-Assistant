@@ -1,0 +1,10 @@
+{
+  "runs": 10,
+  "warmups": 1,
+  "model_path": "models/gpt-oss-20b.gguf",
+  "latencies_ms": {
+    "p50": 7139.29559999815,
+    "p95": 14695.993950006967
+  },
+  "peak_rss": 4494049280
+}

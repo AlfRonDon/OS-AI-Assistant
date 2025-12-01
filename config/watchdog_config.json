@@ -1,0 +1,13 @@
+{
+  "_generated_by": "codex-agent auto-generated 2025-12-01T00:27:00Z",
+  "process_name": "edge_model_runner",
+  "threshold_mb": 14336,
+  "poll_seconds": 30,
+  "start_command": [
+    "pwsh",
+    "-File",
+    "scripts/watchdog_service_wrapper.ps1"
+  ],
+  "log_path": "reports/watchdog_daemon.log",
+  "marker_path": "reports/watchdog_restart.marker"
+}
