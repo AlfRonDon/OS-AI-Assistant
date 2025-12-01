@@ -21,6 +21,8 @@ def test_gguf_loads():
     model_path = Path(__file__).resolve().parents[1] / "models" / "gpt-oss-20b.gguf"
     if not model_path.exists():
         pytest.skip("models/gpt-oss-20b.gguf missing; skipping smoke load.")
+    if os.getenv("DISABLE_LOCAL_LLM", "").lower() in {"1", "true", "yes"}:
+        pytest.skip("local LLM disabled via DISABLE_LOCAL_LLM; skipping heavy load.")
 
     try:
         from llama_cpp import Llama  # type: ignore

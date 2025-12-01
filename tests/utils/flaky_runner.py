@@ -21,7 +21,15 @@ def run_pytest(args: List[str]) -> subprocess.CompletedProcess:
 
 def parse_total(output: str) -> int:
     match = re.search(r"collected\s+(\d+)\s+items?", output)
-    return int(match.group(1)) if match else 0
+    if match:
+        return int(match.group(1))
+    summary_match = re.search(r"(\d+)\s+passed", output)
+    if summary_match:
+        try:
+            return int(summary_match.group(1))
+        except ValueError:
+            return 0
+    return 0
 
 
 def load_last_failed() -> List[str]:

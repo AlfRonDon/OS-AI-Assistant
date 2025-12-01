@@ -28,6 +28,8 @@ def _load_llama() -> Any:
     global _LLAMA
     if _LLAMA is not None or Llama is None:
         return _LLAMA
+    if (os.getenv("DISABLE_LOCAL_LLM") or "").lower() in {"1", "true", "yes"}:
+        return None
     model_path = (
         os.getenv("GPT_OSS_MODEL_PATH")
         or os.getenv("LLAMA_EMBED_MODEL")

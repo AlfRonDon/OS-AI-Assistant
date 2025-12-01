@@ -89,6 +89,8 @@ def _load_llm():
     global _LLM
     if _LLM is not None or Llama is None:
         return _LLM
+    if (os.getenv("DISABLE_LOCAL_LLM") or "").lower() in {"1", "true", "yes"}:
+        return None
     model_path = (
         os.getenv("GPT_OSS_MODEL_PATH")
         or os.getenv("LLAMA_MODEL_PATH")
