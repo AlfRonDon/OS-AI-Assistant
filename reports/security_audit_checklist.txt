@@ -1,0 +1,4 @@
+- [ ] Confirm no `trust_remote_code=True` flags in production conversion/quant scripts (scan `scripts/convert_hf_to_gguf.py`, `scripts/python_convert_to_gguf.py`, wrappers).
+- [ ] Enumerate third-party modules used by the converter (e.g., `safetensors`, `transformers`, `gguf-py`) with pinned versions in deployment notes.
+- [ ] Human review of patched logic in `scripts/convert_hf_to_gguf.py` and `scripts/gguf-py/gguf/gguf_writer.py` for model-specific handling and metadata writes.
+- [ ] Enforce checksum verification for all archived safetensors/gguf artifacts before use; keep SHA256 lines in `reports/archive_safetensors_*.txt` or `dist/checksums.txt`.
