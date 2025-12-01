@@ -1,0 +1,6 @@
+Register a 5-minute notifier task (run in elevated PowerShell from repo root):
+1. setx SLACK_WEBHOOK_URL "<your_webhook_url_here>"
+2. $action = New-ScheduledTaskAction -Execute "pwsh.exe" -Argument "-NoProfile -WindowStyle Hidden -File `"%CD%\\ops\\notify_slack.ps1`""
+3. $trigger = New-ScheduledTaskTrigger -Once -At (Get-Date).AddMinutes(1) -RepetitionInterval (New-TimeSpan -Minutes 5) -RepetitionDuration ([TimeSpan]::MaxValue)
+4. Register-ScheduledTask -TaskName "EdgeOSNotifySlack" -Action $action -Trigger $trigger -RunLevel Highest -Force
+5. Start-ScheduledTask -TaskName "EdgeOSNotifySlack"; tail reports/notify_slack_last.txt to confirm.
