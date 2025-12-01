@@ -1,0 +1,24 @@
+{
+  "plan_id": "case2-modify-json",
+  "metadata": {
+    "scenario": "modify json",
+    "target": "config/features.json"
+  },
+  "steps": [
+    {
+      "id": "update-json",
+      "op": "write",
+      "args": {
+        "path": "config/features.json",
+        "content": {
+          "feature_flag": true,
+          "updated_by": "planner"
+        }
+      },
+      "expect": {
+        "status": "updated",
+        "content_type": "json"
+      }
+    }
+  ]
+}

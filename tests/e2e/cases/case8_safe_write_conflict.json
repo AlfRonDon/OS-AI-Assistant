@@ -1,0 +1,6 @@
+{
+  "task_id": "e2e-case8-safe-write-conflict",
+  "description": "Simulate safe-write conflict: another process holds .bak; executor should create .bak2 or fail gracefully.",
+  "input": { "file": "sandbox/input.json", "patch": { "conflict": true } },
+  "expect": { "file_exists": true }
+}

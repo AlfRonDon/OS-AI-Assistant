@@ -1,0 +1,12 @@
+{
+  "task_id": "e2e-case1",
+  "description": "Append a field to sandbox/input.json using patch_json",
+  "input": {
+    "file": "sandbox/input.json",
+    "patch": { "added": true }
+  },
+  "expect": {
+    "file_exists": true,
+    "contains": { "added": true }
+  }
+}

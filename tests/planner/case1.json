@@ -1,0 +1,21 @@
+{
+  "plan_id": "case1-summarize-file",
+  "metadata": {
+    "scenario": "summarize file",
+    "notes": "Read target file and summarize contents."
+  },
+  "steps": [
+    {
+      "id": "summarize-target",
+      "op": "read",
+      "args": {
+        "path": "data/report.md",
+        "mode": "text"
+      },
+      "expect": {
+        "contains": "summary",
+        "status": "ok"
+      }
+    }
+  ]
+}

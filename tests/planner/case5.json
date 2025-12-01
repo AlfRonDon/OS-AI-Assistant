@@ -1,0 +1,47 @@
+{
+  "plan_id": "case5-rollback-on-failure",
+  "metadata": {
+    "scenario": "rollback on failure",
+    "notes": "Write with compensating restore step."
+  },
+  "steps": [
+    {
+      "id": "backup-config",
+      "op": "read",
+      "args": {
+        "path": "config/settings.json",
+        "destination": "config/settings.json.bak"
+      },
+      "expect": {
+        "status": "backup_ready"
+      }
+    },
+    {
+      "id": "write-config",
+      "op": "write",
+      "safe_write": true,
+      "args": {
+        "path": "config/settings.json",
+        "content": {
+          "logging": "verbose"
+        }
+      },
+      "expect": {
+        "status": "updated"
+      },
+      "on_fail": [
+        {
+          "id": "restore-config",
+          "op": "write",
+          "args": {
+            "path": "config/settings.json",
+            "source": "config/settings.json.bak"
+          },
+          "expect": {
+            "status": "restored"
+          }
+        }
+      ]
+    }
+  ]
+}

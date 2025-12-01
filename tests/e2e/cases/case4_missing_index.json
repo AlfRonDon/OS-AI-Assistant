@@ -1,0 +1,7 @@
+{
+  "task_id": "e2e-case4-missing-index",
+  "description": "Planner should handle missing index gracefully and still produce a plan.",
+  "input": { "file": "sandbox/input.json", "patch": { "x": 2 } },
+  "expect": { "file_exists": true, "contains": { "x": 2 } },
+  "meta": { "require_index": false }
+}

@@ -1,0 +1,21 @@
+{
+  "plan_id": "case10-permission-denied",
+  "metadata": {
+    "scenario": "permission denied simulation",
+    "simulate_permission_denied": true
+  },
+  "steps": [
+    {
+      "id": "write-protected",
+      "op": "write",
+      "args": {
+        "path": "/root/locked.txt",
+        "content": "should fail"
+      },
+      "expect": {
+        "status": "permission_denied",
+        "reason": "read-only location"
+      }
+    }
+  ]
+}

@@ -1,0 +1,22 @@
+{
+  "plan_id": "case7-safe-write",
+  "metadata": {
+    "scenario": "safe write",
+    "notes": "Use safe_write to avoid clobbering file."
+  },
+  "steps": [
+    {
+      "id": "safe-write-log",
+      "op": "write",
+      "safe_write": true,
+      "args": {
+        "path": "logs/output.log",
+        "content": "safe append"
+      },
+      "expect": {
+        "status": "written",
+        "mode": "safe"
+      }
+    }
+  ]
+}

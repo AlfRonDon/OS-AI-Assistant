@@ -1,0 +1,7 @@
+{
+  "task_id": "e2e-case5-corrupted-plan",
+  "description": "Planner returns corrupted plan (invalid schema); pipeline_runner must detect and record the corruption and run compensating step.",
+  "input": { "file": "sandbox/input.json", "patch": { "y": 3 } },
+  "expect": { "file_exists": true, "contains": { "y": 3 } },
+  "meta": { "force_corrupt_plan": true }
+}

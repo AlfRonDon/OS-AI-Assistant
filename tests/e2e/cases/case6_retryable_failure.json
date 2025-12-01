@@ -1,0 +1,7 @@
+{
+  "task_id": "e2e-case6-retryable-failure",
+  "description": "Simulate transient failure on first executor attempt, succeed on retry.",
+  "input": { "file": "sandbox/input.json", "patch": { "retry": true } },
+  "expect": { "file_exists": true, "contains": { "retry": true } },
+  "meta": { "simulate_transient": true }
+}

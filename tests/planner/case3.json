@@ -1,0 +1,23 @@
+{
+  "plan_id": "case3-run-script",
+  "metadata": {
+    "scenario": "run script",
+    "script": "scripts/cleanup.sh"
+  },
+  "steps": [
+    {
+      "id": "execute-script",
+      "op": "run_script",
+      "args": {
+        "command": "python scripts/cleanup.py",
+        "env": {
+          "DRY_RUN": "1"
+        }
+      },
+      "expect": {
+        "status": "ok",
+        "exit_code": 0
+      }
+    }
+  ]
+}

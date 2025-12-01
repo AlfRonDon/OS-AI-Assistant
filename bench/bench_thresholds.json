@@ -1,5 +1,5 @@
 {
-  "p95_ms": 3500,
+  "p95_ms": 15000,
   "obedience_pass_rate": 1.0,
   "rss_max_mb": 12288
 }

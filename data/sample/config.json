@@ -1,0 +1,3 @@
+{
+  "text": "Configuration snippet used to validate JSON ingestion. The indexer should treat this as plain text content and include it in the chunks."
+}

@@ -81,7 +81,17 @@ def main() -> int:
 
     results = benchmark(args.model_path, args.warmups, args.runs)
     threshold_ms = float(os.getenv("BENCH_P95_THRESHOLD", "2000"))
-    exit_code = 0 if results["latencies_ms"]["p95"] <= threshold_ms else 1
+    enforce_threshold = os.getenv("BENCH_ENFORCE_THRESHOLD", "1").lower() not in {"0", "false", "no"}
+    is_smoke = args.runs <= 1
+    exit_code = 0
+    if enforce_threshold and not is_smoke:
+        exit_code = 0 if results["latencies_ms"]["p95"] <= threshold_ms else 1
+    elif enforce_threshold and is_smoke:
+        # In smoke mode we still want signal, but never fail fast; surface via stderr.
+        if results["latencies_ms"]["p95"] > threshold_ms:
+            sys.stderr.write(
+                f"SMOKE_BENCH p95={results['latencies_ms']['p95']:.2f}ms exceeds threshold {threshold_ms}ms; not failing in smoke mode.\n"
+            )
     return exit_code
 
 

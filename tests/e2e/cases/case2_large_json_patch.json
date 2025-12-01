@@ -1,0 +1,9 @@
+{
+  "task_id": "e2e-case2-large-json-patch",
+  "description": "Apply a large JSON patch to sandbox/large.json",
+  "input": {
+    "file": "sandbox/large.json",
+    "patch": { "bulk_add": [ { "i": 0, "v": "x" } ] }
+  },
+  "expect": { "file_exists": true, "contains_key": "bulk_add" }
+}

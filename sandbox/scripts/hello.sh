@@ -1,0 +1,1 @@
+echo hello > sandbox/script_out.txt

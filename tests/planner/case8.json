@@ -1,0 +1,35 @@
+{
+  "plan_id": "case8-patch-json",
+  "metadata": {
+    "scenario": "patch json",
+    "target": "data/settings.json"
+  },
+  "steps": [
+    {
+      "id": "patch-json-theme",
+      "op": "patch_json",
+      "args": {
+        "path": "data/settings.json",
+        "patch": [
+          {
+            "op": "replace",
+            "path": "/theme",
+            "value": "dark"
+          },
+          {
+            "op": "add",
+            "path": "/last_updated",
+            "value": "now"
+          }
+        ]
+      },
+      "expect": {
+        "status": "patched",
+        "modified_paths": [
+          "/theme",
+          "/last_updated"
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,7 @@
+{
+  "task_id": "e2e-case7-permission-denied",
+  "description": "Attempt to write to a protected path; executor should fail gracefully.",
+  "input": { "file": "sandbox/protected/input.json", "patch": { "p": 1 } },
+  "expect": { "file_exists": false },
+  "meta": { "should_fail": true }
+}

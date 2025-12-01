@@ -1,0 +1,25 @@
+{
+  "plan_id": "case6-retry-transient-error",
+  "metadata": {
+    "scenario": "retry on transient error",
+    "notes": "Retry network read when transient failures occur."
+  },
+  "steps": [
+    {
+      "id": "download-resource",
+      "op": "read",
+      "retry": {
+        "limit": 3,
+        "backoff": "exponential",
+        "predicate": "transient"
+      },
+      "args": {
+        "path": "https://example.invalid/data.json",
+        "allow_network": true
+      },
+      "expect": {
+        "status": "ok"
+      }
+    }
+  ]
+}

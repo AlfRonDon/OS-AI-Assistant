@@ -1,0 +1,22 @@
+{
+  "plan_id": "case4-create-missing-file",
+  "metadata": {
+    "scenario": "create missing file",
+    "target": "data/new_note.txt"
+  },
+  "steps": [
+    {
+      "id": "ensure-file-exists",
+      "op": "write",
+      "args": {
+        "path": "data/new_note.txt",
+        "content": "placeholder",
+        "create_dirs": true
+      },
+      "expect": {
+        "exists": true,
+        "status": "created"
+      }
+    }
+  ]
+}

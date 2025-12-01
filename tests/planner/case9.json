@@ -1,0 +1,14 @@
+{
+  "plan_id": "case9-invalid-schema",
+  "metadata": {
+    "scenario": "invalid schema"
+  },
+  "steps": [
+    {
+      "id": "broken-step",
+      "op": "unknown",
+      "args": {},
+      "unexpected": true
+    }
+  ]
+}

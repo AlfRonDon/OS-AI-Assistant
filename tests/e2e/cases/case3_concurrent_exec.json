@@ -1,0 +1,7 @@
+{
+  "task_id": "e2e-case3-concurrent-exec",
+  "description": "Simulate concurrent executor attempts; executor should serialize via lock file.",
+  "input": { "file": "sandbox/input.json", "patch": { "concurrent": true } },
+  "expect": { "file_exists": true, "contains": { "concurrent": true } },
+  "meta": { "simulate_concurrent": true }
+}

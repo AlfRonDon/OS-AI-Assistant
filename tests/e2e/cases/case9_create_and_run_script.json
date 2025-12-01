@@ -1,0 +1,6 @@
+{
+  "task_id": "e2e-case9-create-and-run-script",
+  "description": "Create a small PowerShell/Bash script in sandbox and run it (gated by allow-exec).",
+  "input": { "script": "sandbox/scripts/hello.sh", "content": "echo hello > sandbox/script_out.txt" },
+  "expect": { "file_exists": true, "contains": { "script_out.txt": "hello" } }
+}
