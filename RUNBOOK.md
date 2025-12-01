@@ -209,3 +209,11 @@ This system runs a local quantized gpt-oss-20b model (`.gguf`) with an optional 
 - Watchdog service template rendered (Linux) or ScheduledTask/NSSM registered (Windows)
 - CI change staged (`tests/test_bench_thresholds.py` + thresholds) and patch exported
 - Quantize tuning plan/scripts dropped into `quant_tuning/` and scheduled on 32GB+ host
+
+## Operational note: temporary fallback to q4_K_M
+
+* Active variant: q4_K_M (temporary).
+* Reason: q8_0 produced unstable p95 on constrained hardware.
+* Revert instructions (manual): atomic move of preferred GGUF into models/gpt-oss-20b.gguf, then run scripts/check_model_load.py.
+* CI: recommend setting CI_USE_REMOTE_MODEL=1 for CI runs on limited runners, and making bench thresholds explicit in bench/bench_thresholds.json.
+

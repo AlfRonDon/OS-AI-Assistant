@@ -1,88 +1,52 @@
-[CmdletBinding()]
-param(
-    [switch]$DryRun
-)
+﻿
+# Robust autoselect: Move first, robocopy fallback. Does NOT create automatic backups.
 
-$scriptRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
-$repoRoot = Split-Path $scriptRoot -Parent
-$reportsDir = Join-Path $repoRoot "reports"
-$modelsDir = Join-Path $repoRoot "models"
-$logPath = Join-Path $reportsDir "autoselect.log"
+# Picks q8_0 unless freeGB < 4 then q4_K_M.
 
-if (-not (Test-Path $reportsDir)) {
-    New-Item -ItemType Directory -Path $reportsDir -Force | Out-Null
-}
+$os = Get-CimInstance Win32_OperatingSystem
+$freeGB = [math]::Round(($os.FreePhysicalMemory / 1GB), 2)
+if ($freeGB -lt 4) { $variant = "q4_K_M" } else { $variant = "q8_0" }
 
-function Write-AutoselectLog {
-    param([string]$Message)
-    $stamp = Get-Date -Format "yyyy-MM-ddTHH:mm:ssK"
-    Add-Content -Path $logPath -Value "$stamp`t$Message"
-}
-
-try {
-    $os = Get-CimInstance Win32_OperatingSystem -ErrorAction Stop
-    $freeGB = [math]::Round(($os.FreePhysicalMemory / 1024 / 1024), 2)
-} catch {
-    Write-AutoselectLog "status=free_mem_failed; error=$($_.Exception.Message)"
-    Write-Error "Failed to read free memory: $($_.Exception.Message)"
-    exit 1
-}
-
-$variant = if ($freeGB -lt 4) { "q4_K_M" } else { "q8_0" }
-$reason = if ($freeGB -lt 4) { "free_lt_4gb" } else { "default_q8_0" }
-
+$modelsDir = Join-Path (Get-Location) "models"
 $src = Join-Path $modelsDir "gpt-oss-20b-$variant.gguf"
 $dest = Join-Path $modelsDir "gpt-oss-20b.gguf"
-$srcDir = Split-Path -Parent $src
-$destDir = Split-Path -Parent $dest
-$srcFile = Split-Path -Leaf $src
-$tempCopy = Join-Path $destDir $srcFile
-
-if (-not (Test-Path $src)) {
-    Write-AutoselectLog "status=missing_src; variant=$variant; freeGB=$freeGB; src=$src"
-    Write-Error "Source variant not found: $src"
-    exit 1
+$log = Join-Path (Join-Path (Get-Location) "reports") "autoselect.log"
+if (!(Test-Path $src)) {
+"$((Get-Date).ToString('s')) Variant missing: $src" | Out-File -FilePath $log -Append
+Write-Error "Variant missing: $src"
+exit 1
 }
 
-if ($DryRun) {
-    Write-AutoselectLog "status=dry_run; variant=$variant; freeGB=$freeGB; src=$src; dest=$dest"
-    Write-Host "Dry-run: would activate $variant (freeGB=$freeGB)"
-    exit 0
-}
+"$((Get-Date).ToString('s')) Attempting to swap to $variant" | Out-File -FilePath $log -Append
 
-$moveOk = $false
+# Attempt atomic move first
+
 try {
-    Move-Item -Path $src -Destination $dest -Force -ErrorAction Stop
-    $moveOk = $true
-    Write-AutoselectLog "status=move_success; variant=$variant; freeGB=$freeGB; src=$src; dest=$dest"
-} catch {
-    Write-AutoselectLog "status=move_failed; variant=$variant; freeGB=$freeGB; src=$src; dest=$dest; error=$($_.Exception.Message)"
-}
-
-if (-not $moveOk) {
-    $null = New-Item -ItemType Directory -Path $destDir -Force -ErrorAction SilentlyContinue
-    $robolog = & robocopy $srcDir $destDir $srcFile /R:1 /W:1 /IS /NFL /NDL /NP /NJH /NJS
-    $rc = $LASTEXITCODE
-    Write-AutoselectLog "status=robocopy_exit_$rc; variant=$variant; freeGB=$freeGB; src=$src; destdir=$destDir"
-    if ($rc -le 3 -and (Test-Path $tempCopy)) {
-        try {
-            if (Test-Path $dest) {
-                Remove-Item -Path $dest -Force -ErrorAction SilentlyContinue
-            }
-            Move-Item -Path $tempCopy -Destination $dest -Force -ErrorAction Stop
-            Write-AutoselectLog "status=robocopy_rename_success; variant=$variant; freeGB=$freeGB; dest=$dest"
-            Write-Host "Activated $variant via robocopy (freeGB=$freeGB)"
-            exit 0
-        } catch {
-            Write-AutoselectLog "status=robocopy_rename_failed; variant=$variant; freeGB=$freeGB; dest=$dest; error=$($_.Exception.Message)"
-            Write-Error "Robocopy rename failed: $($_.Exception.Message)"
-            exit 1
-        }
-    } else {
-        Write-Error "Robocopy failed with exit code $rc"
-        exit 1
-    }
-}
-
-Write-Host "Activated $variant via move (freeGB=$freeGB)"
+Move-Item $src $dest -Force
+"$((Get-Date).ToString('s')) Swapped to $variant via Move-Item" | Out-File -FilePath $log -Append
 exit 0
+} catch {
+"$((Get-Date).ToString('s')) Move-Item failed: $($_.Exception.Message). Falling back to robocopy." | Out-File -FilePath $log -Append
+}
+
+# Cross-drive fallback: robocopy into _tmp_copy then move
+
+$tmpDir = Join-Path $modelsDir "_tmp_copy"
+if (!(Test-Path $tmpDir)) { New-Item -ItemType Directory -Path $tmpDir -Force | Out-Null }
+
+$srcDir = Split-Path -Parent $src
+$srcFile = Split-Path -Leaf $src
+$cmd = "robocopy `"$srcDir`" `"$tmpDir`" `"$srcFile`" /MT:8 /R:3 /W:5"
+"$((Get-Date).ToString('s')) Running: $cmd" | Out-File -FilePath $log -Append
+$rc = cmd /c $cmd
+if ($LASTEXITCODE -ge 8) {
+"$((Get-Date).ToString('s')) robocopy failed with code $LASTEXITCODE" | Out-File -FilePath $log -Append
+Write-Error "robocopy failed with code $LASTEXITCODE"
+exit 2
+}
+
+Move-Item (Join-Path $tmpDir $srcFile) $dest -Force
+Remove-Item -Recurse -Force $tmpDir
+"$((Get-Date).ToString('s')) Swapped to $variant via robocopy" | Out-File -FilePath $log -Append
+exit 0
+
