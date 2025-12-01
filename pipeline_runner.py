@@ -506,3 +506,14 @@ def main(argv: List[str] | None = None) -> int:
 
 if __name__ == "__main__":  # pragma: no cover - CLI entrypoint
     sys.exit(main())
+
+
+# EXPECTED_FAIL_HANDLER - inserted by automation
+def _expected_fail_rewrite(plan_json, executor_rc, allow_expected):
+    try:
+        meta = plan_json.get('meta', {}) if isinstance(plan_json, dict) else {}
+        if meta.get('should_fail', False) and allow_expected:
+            return 0
+        return executor_rc
+    except Exception:
+        return executor_rc

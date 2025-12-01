@@ -1,9 +1,9 @@
 {
-  "added": true,
-  "conflict": true,
-  "orig": 1,
   "y": 3,
   "retry": true,
+  "conflict": true,
   "concurrent": true,
+  "orig": 1,
+  "added": true,
   "x": 2
 }
