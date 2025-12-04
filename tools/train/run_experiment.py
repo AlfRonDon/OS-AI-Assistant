@@ -31,7 +31,13 @@ def _write_autofix_summary(log_path: Path, summary: Dict[str, Any]) -> Path:
     return autofix_path
 
 
-def run_experiment(output_path: Path | None = None) -> Tuple[int, Dict[str, Any], Path]:
+def run_experiment(
+    output_path: Path | None = None,
+    epochs: int = 1,
+    batch: int = 4,
+    lora_r: int = 8,
+    qlora: bool = False,
+) -> Tuple[int, Dict[str, Any], Path]:
     ts = utc_timestamp()
     finetune_log = REPORTS_DIR / f"finetune-{ts}.log"
     log_line(finetune_log, "EXPERIMENT_START")
@@ -52,20 +58,20 @@ def run_experiment(output_path: Path | None = None) -> Tuple[int, Dict[str, Any]
     train_config_data = {
         "dataset": dataset_path.as_posix(),
         "output": model_out.as_posix(),
-        "epochs": 1,
-        "batch": 4,
-        "lora_r": 8,
-        "qlora": False,
+        "epochs": epochs,
+        "batch": batch,
+        "lora_r": lora_r,
+        "qlora": qlora,
     }
     write_json(train_config, train_config_data)
 
     train_rc, model_path, metrics_path = train_lora.train(
         dataset_path=dataset_path,
         output_path=model_out,
-        epochs=1,
-        batch=4,
-        lora_r=8,
-        qlora=False,
+        epochs=epochs,
+        batch=batch,
+        lora_r=lora_r,
+        qlora=qlora,
         log_path=train_log,
     )
     log_line(finetune_log, f"TRAIN_DONE rc={train_rc} model={model_path.as_posix()}")
@@ -128,9 +134,13 @@ def run_experiment(output_path: Path | None = None) -> Tuple[int, Dict[str, Any]
 def main(argv: List[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Run full finetune pipeline: dataset -> train -> evaluate.")
     parser.add_argument("--output", help="Optional model output path.")
+    parser.add_argument("--epochs", type=int, default=1, help="Epochs for training stub.")
+    parser.add_argument("--batch", type=int, default=4, help="Batch size for training stub.")
+    parser.add_argument("--lora-r", type=int, default=8, help="LoRA rank for training stub.")
+    parser.add_argument("--qlora", action="store_true", help="Toggle QLoRA metadata mode.")
     args = parser.parse_args(argv)
     out_path = Path(args.output) if args.output else None
-    rc, _, _ = run_experiment(output_path=out_path)
+    rc, _, _ = run_experiment(output_path=out_path, epochs=args.epochs, batch=args.batch, lora_r=args.lora_r, qlora=args.qlora)
     return rc
 
 
