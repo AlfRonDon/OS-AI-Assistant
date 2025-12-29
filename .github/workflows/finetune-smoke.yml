@@ -1,0 +1,20 @@
+﻿name: Finetune Smoke
+
+on:
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+      - run: pip install -r requirements-dev.txt
+      - run: pytest -q finetune/tests/test_dataset_format.py
+      - run: python finetune/scripts/generate_dataset.py --runs-dir reports/smoke --out tmp/smoke.jsonl
+      - run: python finetune/train_lora.py --dataset tmp/smoke.jsonl --smoke --out tmp/smoke_out
+      - run: python finetune/evaluate.py --dataset tmp/smoke.jsonl --pred tmp/smoke_out/preds.jsonl
+      - run: python finetune/run_experiment.py --runs-dir reports/smoke --dataset-out tmp/exp_dataset.jsonl --train-out tmp/exp_out --smoke

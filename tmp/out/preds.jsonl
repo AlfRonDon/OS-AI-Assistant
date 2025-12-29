@@ -1,0 +1,1 @@
+{"exec_rc": 0, "id": "synthetic-0", "plan": {"steps": ["analyze", "patch", "validate"]}, "post_files": {"README.md": "new"}}
